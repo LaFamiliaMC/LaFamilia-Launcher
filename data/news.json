@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "news": [
+    {
+      "id": "willkommen-2026-11-12",
+      "date": "2026-11-12",
+      "title": "Willkommen im La Familia Logbuch",
+      "body": "Hier erscheinen künftig Neuigkeiten aus unserer Minecraft-Welt: Events, Quests, Serverwartungen und Ankündigungen. Alle Meldungen kommen direkt von GitHub – ohne erneute Launcher-Installation.",
+      "image": ""
+    }
+  ]
+}

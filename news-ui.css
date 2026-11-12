@@ -1,0 +1,27 @@
+/* V1.3.4 – News auf originalem Pergament, keine Veränderung der Baseline-Grafik. */
+#card-news #news-container{overflow-y:auto;overflow-x:hidden;pointer-events:auto;padding-right:4px;}
+#news-container .news-item.lf-news-preview{display:flow-root;border-bottom:1px solid rgba(170,108,26,.5);padding:0 0 7px;margin:0 0 7px;}
+#news-container .news-item img.lf-news-image{display:block;float:left;width:47px;height:47px;margin:2px 7px 5px 0;object-fit:cover;border:1px solid #ba8e45;border-radius:2px;}
+#card-news .lf-news-preview h3{font:bold 11px Georgia,serif;line-height:1.15;color:#60370d;margin:0 0 2px;}
+#card-news .lf-news-preview .lf-news-date{font:9px Georgia,serif;color:#704714;display:block;margin-bottom:3px;}
+#card-news .lf-news-preview .lf-news-text{font:10px/1.3 Georgia,serif;color:#38200d;margin:0;overflow-wrap:anywhere;white-space:pre-line;}
+#card-news .lf-news-more{padding:2px 0;margin-top:3px;background:transparent;border:0;color:#764006;font:bold 9px Georgia,serif;text-decoration:underline;cursor:pointer;pointer-events:auto;}
+#card-news .lf-news-more:hover{color:#a86b0e;}
+#card-news .lf-news-empty{margin:3px;color:#533116;font:11px Georgia,serif;}
+#card-news #news-loading-status{font-size:9px;max-height:18px;overflow:hidden;}
+#page-news #news-page-content .lf-news-panel{height:100%;padding:15px 20px;overflow:hidden;display:flex;flex-direction:column;gap:8px;}
+#page-news .lf-news-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:0 0 auto;border-bottom:1px solid rgba(154,94,35,.4);padding-bottom:7px;}
+#page-news .lf-news-intro{font:11px/1.4 Georgia,serif;color:#583719;margin:0;}
+#page-news .lf-news-toolbar .feature-button{min-height:26px;padding:6px 9px;white-space:nowrap;}
+#page-news .lf-news-full-list{min-height:0;flex:1 1 auto;overflow-y:auto;padding:2px 7px 0 2px;}
+#page-news .lf-news-entry{display:flow-root;min-height:78px;border-bottom:1px solid rgba(167,109,34,.5);padding:9px 5px 11px 0;}
+#page-news .lf-news-entry:last-child{border-bottom:0;}
+#page-news .lf-news-entry .lf-news-image{float:left;width:100px;height:78px;object-fit:cover;border:2px solid rgba(168,110,33,.75);margin:0 12px 8px 0;border-radius:3px;}
+#page-news .lf-news-entry h3{font:bold 15px 'Cinzel',Georgia,serif;color:#5a300b;margin:0 0 3px;}
+#page-news .lf-news-entry .lf-news-date{display:block;margin-bottom:5px;font:10px Georgia,serif;color:#8c5b25;}
+#page-news .lf-news-entry .lf-news-text{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.45 Georgia,serif;color:#34200d;margin:0 0 6px;}
+#page-news .lf-news-admin-id{color:#8d6b40;font:9px Consolas,monospace;}
+#page-news .lf-news-feed-status{flex:none;margin:0;color:#705028;font:10px Georgia,serif;}
+#page-news .lf-news-empty{color:#714725;font:12px Georgia,serif;}
+#page-news .lf-news-full-list::-webkit-scrollbar,#card-news #news-container::-webkit-scrollbar{width:5px;}
+#page-news .lf-news-full-list::-webkit-scrollbar-thumb,#card-news #news-container::-webkit-scrollbar-thumb{background:#98632b;border-radius:5px;}

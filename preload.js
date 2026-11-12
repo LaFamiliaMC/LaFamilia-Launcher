@@ -26,6 +26,14 @@ contextBridge.exposeInMainWorld('laFamilia', {
     ipcRenderer.on('server:status',listener);
     return () => ipcRenderer.removeListener('server:status',listener);
   },
+  getNewsState: () => ipcRenderer.invoke('news:get-state'),
+  refreshNews: () => ipcRenderer.invoke('news:refresh'),
+  onNewsChange: callback => {
+    if (typeof callback !== 'function') return () => {};
+    const listener = (_event, state) => callback(state);
+    ipcRenderer.on('news:state',listener);
+    return () => ipcRenderer.removeListener('news:state',listener);
+  },
   getUpdateStatus: () => ipcRenderer.invoke('updates:get-state'),
   checkForUpdates: () => ipcRenderer.invoke('updates:check'),
   installUpdate: () => ipcRenderer.invoke('updates:install'),

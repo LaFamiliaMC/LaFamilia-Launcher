@@ -1,0 +1,66 @@
+name: La Familia News verwalten
+on:
+  workflow_dispatch:
+    inputs:
+      aktion:
+        description: 'Meldung hinzufuegen, bearbeiten oder loeschen'
+        required: true
+        type: choice
+        options: [hinzufuegen, bearbeiten, loeschen]
+      meldungs_id:
+        description: 'Nur fuer bearbeiten und loeschen: ID aus data/news.json'
+        required: false
+        type: string
+      titel:
+        description: 'Titel (fuer hinzufuegen Pflicht)'
+        required: false
+        type: string
+      text:
+        description: 'Text der Nachricht (fuer hinzufuegen Pflicht)'
+        required: false
+        type: string
+      datum:
+        description: 'JJJJ-MM-TT, leer fuer heutiges Datum'
+        required: false
+        type: string
+      bild:
+        description: 'Optional: assets/news/name.png, Minus entfernt Bild'
+        required: false
+        type: string
+permissions:
+  contents: write
+concurrency:
+  group: la-familia-news-verwaltung
+  cancel-in-progress: false
+jobs:
+  news-verwalten:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: News-Datei bearbeiten
+        env:
+          NEWS_ACTION: ${{ inputs.aktion }}
+          NEWS_ID: ${{ inputs.meldungs_id }}
+          NEWS_TITLE: ${{ inputs.titel }}
+          NEWS_BODY: ${{ inputs.text }}
+          NEWS_DATE: ${{ inputs.datum }}
+          NEWS_IMAGE: ${{ inputs.bild }}
+        run: node scripts/manage-news.cjs
+      - name: News auf main veröffentlichen
+        shell: bash
+        run: |
+          git config user.name 'La Familia News Bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/news.json
+          if git diff --cached --quiet; then
+            echo 'Keine geaenderten Meldungen.'
+          else
+            git commit -m 'News: Meldung verwaltet'
+            git push origin HEAD:main
+          fi

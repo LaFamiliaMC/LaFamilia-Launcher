@@ -75,7 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
     target.addEventListener('animationend', () => target.classList.remove('page-entering'), { once: true });
     activePage = pageName;
 
-    document.addEventListener('lafamilia:navigate', event => switchPage(event.detail?.page));
 
   for (const button of navigationButtons) {
       const selected = button.dataset.page === pageName || (pageName === 'server' && button.dataset.page === 'settings');
@@ -87,6 +86,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (pageName === 'mods') void refreshMods();
   }
+
+  document.addEventListener('lafamilia:navigate', event => switchPage(event.detail?.page));
 
   for (const button of navigationButtons) {
     button.addEventListener('click', () => switchPage(button.dataset.page));
@@ -416,7 +417,6 @@ document.addEventListener('DOMContentLoaded', () => {
   setupInfoPage('friends-page-content', 'Die echte Freundesliste und Online-Anzeige werden später eingebunden.');
   setupInfoPage('profile-page-content', 'Hier erscheint später dein echtes Minecraft-Spielerprofil mit Skin und Statistiken.');
   setupInfoPage('statistics-page-content', 'Spielzeit, Erfolge und weitere Serverstatistiken werden hier später dargestellt.');
-  setupInfoPage('news-page-content', 'Das vollständige Logbuch wird später aus der JSON-Datei deines Webservers geladen.');
 
   // Beispiel-Quest-Reiter umschalten; keine echten Serverdaten vortäuschen.
   const examples = {

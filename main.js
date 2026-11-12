@@ -9,10 +9,13 @@ const os = require('node:os');
 const { createUpdaterController } = require('./updater');
 const { parseAddress, queryJavaStatus } = require('./server-status');
 const { queryServerMetrics, validateMetricsUrl } = require('./server-metrics');
+const { createNewsController } = require('./news-feed');
 
 let mainWindow;
 let updatesController;
 let serverRefreshInterval;
+let newsRefreshInterval;
+let newsController;
 let serverCheckPromise;
 let serverSnapshot = {phase:'checking',online:false,address:'23.88.65.87:25565',playersOnline:null,playersMax:null,pingMs:null,version:null,checkedAt:null,error:null,tps:null,uptimeSeconds:null,telemetryAvailable:false,telemetryError:null};
 
@@ -232,6 +235,10 @@ function createWindow() {
     });
     updatesController.initialize();
     void updatesController.check();
+    newsController = createNewsController({cacheFile:path.join(app.getPath('userData'),'news-cache.json'),getWindow:()=>mainWindow});
+    void newsController.initialize();
+    if(newsRefreshInterval)clearInterval(newsRefreshInterval);
+    newsRefreshInterval=setInterval(()=>{void newsController?.refresh();},120000);
     void refreshServerStatus();
     if (serverRefreshInterval) clearInterval(serverRefreshInterval);
     serverRefreshInterval = setInterval(() => { void refreshServerStatus(); }, 30000);
@@ -244,6 +251,9 @@ function createWindow() {
   mainWindow.on('closed', () => {
     if (serverRefreshInterval) clearInterval(serverRefreshInterval);
     serverRefreshInterval = null;
+    if (newsRefreshInterval) clearInterval(newsRefreshInterval);
+    newsRefreshInterval = null;
+    newsController = null;
     mainWindow = null;
   });
 
@@ -264,6 +274,14 @@ function createWindow() {
 
 app.whenReady().then(() => {
   if (process.platform === 'win32') app.setAppUserModelId('de.lafamilia.minecraftlauncher');
+  ipcMain.handle('news:get-state',event=>{
+    getTrustedWindow(event);
+    return newsController?newsController.state():{phase:'loading',articles:[],message:'Neuigkeiten werden geladen …'};
+  });
+  ipcMain.handle('news:refresh',async event=>{
+    getTrustedWindow(event);
+    return newsController?newsController.refresh():{phase:'loading',articles:[],message:'News-Feed wird vorbereitet …'};
+  });
   ipcMain.handle('updates:get-state', (event) => {
     getTrustedWindow(event);
     return updatesController ? updatesController.state() : { phase: 'checking', message: 'Updateprüfung wird vorbereitet', percent: 0 };
