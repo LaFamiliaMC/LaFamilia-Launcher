@@ -161,3 +161,23 @@ test('GitHub-API wird als JSON und Release-Dateien als Binärdaten angefragt',()
   assert.equal(requestHeaders('https://api.github.com/repos/LaFamiliaMC/LaFamilia-Modpack/releases/latest').Accept,'application/vnd.github+json');
   assert.equal(requestHeaders(BASE+'manifest.json').Accept,'application/octet-stream');
 });
+
+test('Entwurfslinks werden nur nach Asset-Name, Größe und SHA-256 repariert',()=>{
+  const {canonicalizeManifestDownloadUrls}=require('../modpack-core');
+  const filename='mod-12345678-example.jar';
+  const draft=BASE.replace('modpack-v1.0.0','untagged-abc123')+filename;
+  const published=BASE+filename;
+  const mod={path:'mods/example.jar',file:'example.jar',size:data.length,sha256:HASH(data),url:draft};
+  const release={
+    tag_name:'modpack-v1.0.0',assets:[
+      {name:filename,browser_download_url:published,size:data.length,digest:'sha256:'+HASH(data),state:'uploaded'}
+    ]
+  };
+  const normalized=canonicalizeManifestDownloadUrls(manifest({mods:[mod]}),release);
+  assert.equal(normalized.mods[0].url,published);
+  assert.equal(normalizeManifest(normalized).mods[0].url,published);
+  assert.throws(()=>canonicalizeManifestDownloadUrls(manifest({mods:[mod]}),{
+    ...release,assets:[{...release.assets[0],digest:'sha256:'+'a'.repeat(64)}]
+  }),/Prüfsumme/);
+  assert.throws(()=>canonicalizeManifestDownloadUrls(manifest({mods:[{...mod,url:'https://evil.example/file.jar'}]}),release));
+});

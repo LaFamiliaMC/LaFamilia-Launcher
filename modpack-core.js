@@ -25,6 +25,65 @@ function trustedAssetURL(value){
   if(!/^\/LaFamiliaMC\/LaFamilia-Modpack\/releases\/download\/modpack-v[0-9]+\.[0-9]+\.[0-9]+\/[^/]+$/i.test(u.pathname))throw Error('Download gehört nicht zum LaFamilia-Modpack-Release.');
   return u.toString();
 }
+
+function canonicalizeManifestDownloadUrls(input,release){
+  if(!input||typeof input!=='object'||!release||!/^modpack-v\d+\.\d+\.\d+$/.test(String(release.tag_name))||!Array.isArray(release.assets)){
+    throw Error('Ungültige Release-Metadaten für Modpack-URLs.');
+  }
+  const assets=new Map();
+  for(const a of release.assets){
+    if(typeof a.name!=='string'||typeof a.browser_download_url!=='string')continue;
+    trustedAssetURL(a.browser_download_url);
+    if(assets.has(a.name))throw Error('Doppelte GitHub-Release-Datei: '+a.name);
+    assets.set(a.name,a);
+  }
+  function fix(item){
+    if(!item||typeof item!=='object'||typeof item.url!=='string')return item;
+    let u;
+    try{u=new URL(item.url);}catch{throw Error('Ungültige URL im Modpack-Manifest.');}
+    if(u.protocol!=='https:'||u.hostname!=='github.com'||u.username||u.password||u.port||u.search||u.hash)throw Error('Unsichere Modpack-Adresse im Manifest.');
+    const prefix='/LaFamiliaMC/LaFamilia-Modpack/releases/download/';
+    if(!u.pathname.startsWith(prefix))throw Error('Modpack-Download verweist auf fremdes Repository.');
+    const tail=u.pathname.slice(prefix.length).split('/');
+    if(tail.length!==2||!tail[1]||/%2f|%5c/i.test(tail[1]))throw Error('Ungültiger Asset-Pfad.');
+    const [tag,encodedName]=tail;
+    let name;
+    try{name=decodeURIComponent(encodedName);}catch{throw Error('Ungültiger Asset-Dateiname.');}
+    if(/^untagged-[A-Za-z0-9-]+$/.test(tag)){
+      const asset=assets.get(name);
+      if(!asset||asset.state!=='uploaded')throw Error('Entwurfslink kann nicht zugeordnet werden: '+name);
+      if(asset.size!==item.size||!/^sha256:[a-f0-9]{64}$/i.test(String(asset.digest))
+         ||asset.digest.slice(7).toLowerCase()!==String(item.sha256).toLowerCase()){
+        throw Error('Dateigröße/Prüfsumme des GitHub-Assets passt nicht: '+name);
+      }
+      return {...item,url:trustedAssetURL(asset.browser_download_url)};
+    }
+    trustedAssetURL(item.url);
+    // Prüfen, wenn die Datei zum aktuellen Release gehört. Ältere Releases dürfen weiter referenziert werden.
+    if(tag===release.tag_name){
+      const asset=assets.get(name);
+      if(!asset||asset.state!=='uploaded'||asset.size!==item.size
+         ||!/^sha256:[a-f0-9]{64}$/i.test(String(asset.digest))
+         ||asset.digest.slice(7).toLowerCase()!==String(item.sha256).toLowerCase()){
+        throw Error('Release-Datei fehlt oder Prüfsumme abweichend: '+name);
+      }
+    }
+    return item;
+  }
+  return {
+    ...input,
+    mods:Array.isArray(input.mods)?input.mods.map(fix):input.mods,
+    resourcepacks:input.resourcepacks?{
+      ...input.resourcepacks,
+      archive:input.resourcepacks.archive?fix(input.resourcepacks.archive):input.resourcepacks.archive
+    }:input.resourcepacks,
+    config:input.config?{
+      ...input.config,
+      archive:input.config.archive?fix(input.config.archive):input.config.archive
+    }:input.config
+  };
+}
+
 function validFile(item,category,seen){
   if(!item||typeof item!=='object')throw Error('Eintrag im Manifest fehlt.');
   const rel=safeRelative(item.path,category);
@@ -134,4 +193,4 @@ async function createPlan(manifest,oldState,gameDir){
       +(groups.resourcepacks?manifest.resourcepacks.archive.size:0)
       +(groups.config?manifest.config.archive.size:0)};
 }
-module.exports={PACK_REPO,RELEASE_API,normalizeManifest,safeRelative,trustedAssetURL,fileHash,inspectFile,normalizedOldState,createPlan};
+module.exports={PACK_REPO,RELEASE_API,normalizeManifest,canonicalizeManifestDownloadUrls,safeRelative,trustedAssetURL,fileHash,inspectFile,normalizedOldState,createPlan};

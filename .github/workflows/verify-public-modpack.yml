@@ -28,7 +28,11 @@ jobs:
         run: |
           mkdir -p .modpack-smoke
           gh release download modpack-v1.0.0 --repo LaFamiliaMC/LaFamilia-Modpack --pattern manifest.json --dir .modpack-smoke
+      - name: Load published release metadata for canonical asset URLs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api repos/LaFamiliaMC/LaFamilia-Modpack/releases/tags/modpack-v1.0.0 > .modpack-smoke/release.json
       - name: Check real manifest against launcher V1.3.5 parser
-        run: node scripts/verify-public-modpack.cjs .modpack-smoke/manifest.json
+        run: node scripts/verify-public-modpack.cjs .modpack-smoke/manifest.json .modpack-smoke/release.json
       - name: Run unit tests
         run: npm test

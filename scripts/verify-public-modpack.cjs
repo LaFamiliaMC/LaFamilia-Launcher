@@ -2,7 +2,7 @@
 /* GitHub CI: reale Release-Manifestdatei ohne Spiel-Dateiänderungen gegen Launcherformat prüfen. */
 const fs=require('node:fs');
 const path=require('node:path');
-const {normalizeManifest}=require('../modpack-core');
+const {normalizeManifest,canonicalizeManifestDownloadUrls}=require('../modpack-core');
 const filename=process.argv[2];
 if(!filename)throw Error('Pfad zum heruntergeladenen Manifest fehlt.');
 const input=JSON.parse(fs.readFileSync(filename,'utf8'));
@@ -11,7 +11,10 @@ console.log('Top-Level-Felder:',Object.keys(input).join(', '));
 console.log('Erster Mod-Eintrag:',JSON.stringify((input.mods||[])[0]||{}).slice(0,800));
 console.log('Resourcepacks-Felder:',Object.keys(input.resourcepacks||{}).join(', '));
 console.log('Config-Felder:',Object.keys(input.config||{}).join(', '));
-const m=normalizeManifest(input);
+const release=JSON.parse(fs.readFileSync(process.argv[3],'utf8'));
+const repaired=canonicalizeManifestDownloadUrls(input,release);
+const m=normalizeManifest(repaired);
+console.log('Normalisierte URL-Beispiele:',m.mods[0].url,m.resourcepacks.archive?.url,m.config.archive?.url);
 if(m.mods.length!==301)throw Error('Erwartete 301 Mod-Dateien, erhalten: '+m.mods.length);
 if(m.resourcepacks.files.length!==24)throw Error('Erwartete 24 Resourcepack-Dateien, erhalten: '+m.resourcepacks.files.length);
 if(m.config.files.length!==621)throw Error('Erwartete 621 Config-Dateien, erhalten: '+m.config.files.length);

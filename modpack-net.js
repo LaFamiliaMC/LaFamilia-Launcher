@@ -7,7 +7,7 @@ const {createWriteStream}=require('node:fs');
 const crypto=require('node:crypto');
 const {Transform}=require('node:stream');
 const {pipeline}=require('node:stream/promises');
-const {normalizeManifest,RELEASE_API,trustedAssetURL,fileHash}=require('./modpack-core');
+const {normalizeManifest,canonicalizeManifestDownloadUrls,RELEASE_API,trustedAssetURL,fileHash}=require('./modpack-core');
 function trustedTransport(url,first){
   const u=new URL(url);
   if(u.protocol!=='https:'||u.username||u.password||u.port)throw Error('Unsichere Download-Weiterleitung.');
@@ -84,7 +84,7 @@ async function getLatestManifest({signal}={}){
   if(buffer.length!==asset.size)throw Error('Unvollständige Manifest-Datei.');
   if(typeof asset.digest==='string'&&/^sha256:[a-f0-9]{64}$/i.test(asset.digest)&&sha(buffer)!==asset.digest.slice(7).toLowerCase())throw Error('Manifest SHA-256 stimmt nicht.');
   let manifest;
-  try{manifest=normalizeManifest(JSON.parse(buffer.toString('utf8')));}catch(error){throw Error('Ungültiges Modpack-Manifest: '+error.message);}
+  try{manifest=normalizeManifest(canonicalizeManifestDownloadUrls(JSON.parse(buffer.toString('utf8')),release));}catch(error){throw Error('Ungültiges Modpack-Manifest: '+error.message);}
   if('modpack-v'+manifest.version!==release.tag_name)throw Error('Manifestversion passt nicht zum GitHub Release.');
   return {manifest,manifestSha256:sha(buffer),publishedAt:release.published_at||null,releaseUrl:release.html_url};
 }
