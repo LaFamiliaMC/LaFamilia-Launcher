@@ -138,30 +138,72 @@ function pngDataUrl(bytes){
   if(width<64||width>1024||height<32||height>1024)throw Error('Mojang-Skin hat eine ungültige Größe.');
   return 'data:image/png;base64,'+bytes.toString('base64');
 }
-function createPlayerProfileController({minecraftRoot,localAppData,readActive=readActiveAccount,
-  fetchBytes=requestBytes,clock=()=>Date.now()}={}){
-  let cache=null,inFlight=null;
-  async function load(force=false){
-    const identity=await readActive({minecraftRoot,localAppData});
+function parsePublicPlayer(data,requestedName){
+  const identity=publicIdentity(data?.id,data?.name);
+  if(!identity||identity.name.toLowerCase()!==requestedName.toLowerCase())
+    throw Error('Der angegebene Minecraft-Spieler wurde nicht gefunden.');
+  return identity;
+}
+async function lookupPublicPlayer(name,{fetchBytes=requestBytes}={}){
+  if(typeof name!=='string'||!NAME.test(name))throw Error('Bitte einen gültigen Minecraft-Java-Spielernamen eingeben (3–16 Zeichen).');
+  const url='https://api.minecraftservices.com/minecraft/profile/lookup/name/'+name;
+  const response=await fetchBytes(url);
+  let parsed;
+  try{parsed=JSON.parse(response.toString('utf8'));}
+  catch{throw Error('Der Minecraft-Profilserver hat keine gültigen Spielerdaten zurückgegeben.');}
+  return parsePublicPlayer(parsed,name);
+}
+async function readSavedChoice(file){
+  if(!file)return null;
+  try{
+    const stat=await fs.lstat(file);
+    if(!stat.isFile()||stat.isSymbolicLink()||stat.size>MAX_CHOICE_BYTES)return null;
+    const data=JSON.parse(await fs.readFile(file,'utf8'));
+    return publicIdentity(data?.uuid,data?.name);
+  }catch(error){if(error.code==='ENOENT'||error instanceof SyntaxError)return null;throw error;}
+}
+async function saveChoice(file,identity){
+  if(!file)throw Error('Spielerprofil-Speicherort fehlt.');
+  const safe=publicIdentity(identity?.uuid,identity?.name);
+  if(!safe)throw Error('Ungültiger Minecraft-Spieler.');
+  await fs.mkdir(path.dirname(file),{recursive:true});
+  const tmp=file+'.'+process.pid+'.tmp';
+  try{
+    await fs.writeFile(tmp,JSON.stringify(safe)+'\n',{encoding:'utf8',flag:'wx'});
+    await fs.rename(tmp,file);
+  }catch(error){await fs.rm(tmp,{force:true}).catch(()=>{});throw error;}
+}
+function createPlayerProfileController({minecraftRoot,localAppData,choiceFile,readActive=readActiveAccount,
+  fetchBytes=requestBytes,lookup=lookupPublicPlayer,clock=()=>Date.now()}={}){
+  let cache=null,inFlight=null,selectedManual=null;
+  async function load(force=false,manualOverride=null){
+    let identity=manualOverride;
+    let source=manualOverride?'manual':'launcher';
+    if(!identity&&selectedManual){identity=selectedManual;source='manual';}
+    if(!identity){identity=await readActive({minecraftRoot,localAppData});source='launcher';}
+    if(!identity){identity=await readSavedChoice(choiceFile);source='saved';}
     if(!identity)return {ok:false,code:'no_account',
-      message:'Kein aktives Minecraft-Java-Konto erkannt. Bitte im offiziellen Minecraft Launcher anmelden und „Profil aktualisieren“ klicken.'};
+      message:'Kein aktiver Minecraft-Java-Account erkannt. Bitte unten deinen Spielernamen eingeben und „Skin laden“ klicken.'};
     const {uuid,name}=identity;
-    if(!force&&cache?.uuid===uuid&&clock()-cache.loadedAt<CACHE_MS)return {...cache.data};
+    if(!force&&cache?.uuid===uuid&&clock()-cache.loadedAt<CACHE_MS)
+      return {...cache.data,source};
     try{
       const response=await fetchBytes('https://sessionserver.mojang.com/session/minecraft/profile/'+uuid);
       const official=decodeTextures(response.toString('utf8'),uuid);
       const skinData=official.skin?pngDataUrl(await fetchBytes(official.skin)):null;
       const capeData=official.cape?pngDataUrl(await fetchBytes(official.cape)):null;
       const data={ok:true,code:'ready',name:official.name||name,uuid,model:official.model,
-        skinData,capeData,hasCape:Boolean(capeData),source:'mojang',
-        stats:{playtime:null,kills:null,blocksPlaced:null,blocksMined:null,quests:null}};
+        skinData,capeData,hasCape:Boolean(capeData),source,
+        stats:{playtime:null,kills:null,blocksPlaced:null,blocksMined:null,quests:null},
+        message:source==='launcher'?'Aktives Minecraft-Java-Profil geladen.':
+          'Öffentliches Minecraft-Profil geladen (nur Anzeige – keine Anmeldung).'};
       cache={uuid,loadedAt:clock(),data};
       return {...data};
     }catch(error){
-      if(cache?.uuid===uuid)return {...cache.data,code:'cached',cached:true,
-        message:'Mojang ist momentan nicht erreichbar – letzter bekannter Skin wird angezeigt.'};
-      return {ok:false,code:'lookup_failed',name,uuid,
-        message:'Minecraft-Account erkannt, aber Mojangs Skinserver ist nicht erreichbar: '+error.message};
+      if(cache?.uuid===uuid)return {...cache.data,code:'cached',cached:true,source,
+        message:'Mojang ist gerade nicht erreichbar – letzter bekannter Skin dieses Spielers wird gezeigt.'};
+      return {ok:false,code:'lookup_failed',name,uuid,source,
+        message:'Spieler erkannt, aber Skin konnte nicht geladen werden: '+error.message};
     }
   }
   function refresh(force=false){
@@ -169,8 +211,25 @@ function createPlayerProfileController({minecraftRoot,localAppData,readActive=re
     inFlight=load(force).finally(()=>{inFlight=null;});
     return inFlight;
   }
-  return {get:()=>refresh(false),refresh:()=>refresh(true)};
+  async function chooseName(value){
+    const name=typeof value==='string'?value.trim():'';
+    if(!NAME.test(name))return {ok:false,code:'invalid_name',
+      message:'Bitte einen gültigen Minecraft-Spielernamen eingeben (3–16 Buchstaben, Zahlen oder _).'};
+    try{
+      const identity=await lookup(name,{fetchBytes});
+      const result=await load(true,identity);
+      if(result.ok){
+        selectedManual=identity;
+        await saveChoice(choiceFile,identity);
+      }
+      return result;
+    }catch(error){
+      return {ok:false,code:'name_lookup_failed',
+        message:'Minecraft-Spieler konnte nicht geladen werden: '+String(error.message||error)};
+    }
+  }
+  return {get:()=>refresh(false),refresh:()=>refresh(true),chooseName};
 }
 module.exports={normalizeUuid,publicIdentity,accountFromModern,accountFromLegacy,
   readActiveAccount,requestBytes,trustedTextureUrl,decodeTextures,pngDataUrl,
-  createPlayerProfileController};
+  parsePublicPlayer,lookupPublicPlayer,readSavedChoice,saveChoice,createPlayerProfileController};
