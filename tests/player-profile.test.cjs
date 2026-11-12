@@ -117,3 +117,68 @@ test('Mojang offline: nur Cache für aktuell gewählte UUID verwenden',async()=>
   assert.equal(stale.code,'cached');
   assert.equal(stale.uuid,UUID);
 });
+
+test('Neuere Kontodatei: alternatives Feld für ausdrücklich aktives Minecraft-Konto',()=>{
+  const selected={activeAccountId:'chosen',accounts:{
+    ignored:{minecraftProfile:{id:OTHER,name:'FremderSpieler'}},
+    chosen:{profile:{uuid:UUID,username:'jeb_'}}
+  }};
+  assert.deepEqual(accountFromModern(selected),{uuid:UUID,name:'jeb_'});
+  assert.equal(accountFromModern({...selected,activeAccountId:'unknown'}),null);
+});
+test('Öffentliche Spielernamenssuche überprüft echte Mojang-UUID und Namen',async()=>{
+  const {lookupPublicPlayer}=require('../player-profile');
+  const identity=await lookupPublicPlayer('jeb_',{fetchBytes:async()=>Buffer.from(JSON.stringify({id:UUID,name:'Jeb_'}))});
+  assert.deepEqual(identity,{uuid:UUID,name:'Jeb_'});
+  await assert.rejects(()=>lookupPublicPlayer('jeb_',{fetchBytes:async()=>Buffer.from(JSON.stringify({id:UUID,name:'Notch'}))}),/nicht gefunden/);
+  await assert.rejects(()=>lookupPublicPlayer('../etc',{fetchBytes:async()=>{throw Error('Keine HTTP-Anfrage erlaubt');}}),/gültigen/);
+});
+test('Manuell eingegebener echter Spieler wird auch nach dem Launcher-Neustart wieder geladen',async t=>{
+  const base=await fs.mkdtemp(path.join(os.tmpdir(),'lafamilia-manual-account-'));
+  t.after(()=>fs.rm(base,{recursive:true,force:true}));
+  const choiceFile=path.join(base,'profile-choice.json');
+  const options={
+    choiceFile,readActive:async()=>null,
+    lookup:async requested=>{
+      assert.equal(requested,'jeb_');
+      return {uuid:UUID,name:'jeb_'};
+    },
+    fetchBytes:async url=>url.includes('sessionserver')?response({cape:CAPE}):png()
+  };
+  const first=createPlayerProfileController(options);
+  const fromName=await first.chooseName('jeb_');
+  assert.equal(fromName.ok,true);
+  assert.equal(fromName.source,'manual');
+  assert.equal(fromName.hasCape,true);
+  const raw=await fs.readFile(choiceFile,'utf8');
+  assert.deepEqual(JSON.parse(raw),{uuid:UUID,name:'jeb_'});
+  assert.doesNotMatch(raw,/token|accessToken|password/i);
+  const second=createPlayerProfileController(options);
+  const cached=await second.get();
+  assert.equal(cached.ok,true);
+  assert.equal(cached.source,'saved');
+  assert.equal(cached.name,'jeb_');
+});
+test('Automatisch erkanntes aktives Konto ist vorrangig vor einem gespeicherten Anzeigeprofil',async t=>{
+  const base=await fs.mkdtemp(path.join(os.tmpdir(),'lafamilia-active-account-'));
+  t.after(()=>fs.rm(base,{recursive:true,force:true}));
+  const choiceFile=path.join(base,'profile-choice.json');
+  await fs.writeFile(choiceFile,JSON.stringify({uuid:OTHER,name:'Notch'}));
+  let active=true;
+  const ctrl=createPlayerProfileController({
+    choiceFile,readActive:async()=>active?{uuid:UUID,name:'jeb_'}:null,
+    fetchBytes:async url=>url.includes('sessionserver')?response():png()
+  });
+  const result=await ctrl.get();
+  assert.equal(result.source,'launcher');
+  assert.equal(result.uuid,UUID);
+});
+test('Ungültiger manueller Name wird abgewiesen bevor eine HTTP-Anfrage erfolgt',async()=>{
+  let called=false;
+  const ctrl=createPlayerProfileController({
+    readActive:async()=>null,lookup:async()=>{called=true;throw Error('Darf nicht aufgerufen werden');}
+  });
+  const result=await ctrl.chooseName('../../secret');
+  assert.equal(result.code,'invalid_name');
+  assert.equal(called,false);
+});
