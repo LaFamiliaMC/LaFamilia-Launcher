@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   const cancel=el('button','feature-button lf-pack-button','Download abbrechen');
   cancel.type='button';cancel.hidden=true;
   actions.append(check,install,cancel);
-  const hints=el('p','lf-pack-hint','Verwaltet nur La-Familia-Dateien. Eigene Mods, Resourcepacks und geänderte Configs bleiben erhalten.');
+  const hints=el('p','lf-pack-hint','Vor dem Installieren Minecraft schließen. Eigene Mods, Resourcepacks und geänderte Configs bleiben erhalten.');
   const conflictWrapper=el('details','lf-pack-conflicts');
   const summary=el('summary','','Geschützte Dateien (0)');
   const conflicts=el('ul','');

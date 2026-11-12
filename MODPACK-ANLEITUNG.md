@@ -24,7 +24,7 @@ Die Modpack-Dateien müssen dem **Schema 2** des Uploader V2.4 entsprechen. Rele
 
 ## Testen
 
-1. Den Windows-Workflow auf GitHub ausführen. Nur das erfolgreiche Testergebnis reicht nicht als vollständiger End-to-End-Nachweis.
+1. Minecraft vor einem Modpack-Update vollständig schließen und den Windows-Workflow auf GitHub ausführen. Nur das erfolgreiche Testergebnis reicht nicht als vollständiger End-to-End-Nachweis.
 2. Installer aus dem GitHub-Actions-Artifact in einer separaten Windows-Testumgebung installieren.
 3. Im Launcher Mods öffnen, GitHub-Prüfung abwarten, auf **Modpack installieren / aktualisieren** klicken.
 4. Den Download für 301 Mods + Resourcepacks + Configs vollständig durchlaufen lassen.

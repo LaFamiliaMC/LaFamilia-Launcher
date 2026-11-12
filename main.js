@@ -12,6 +12,14 @@ const { queryServerMetrics, validateMetricsUrl } = require('./server-metrics');
 const { createNewsController } = require('./news-feed');
 const { createModpackManager } = require('./modpack-manager');
 
+const firstInstance = app.requestSingleInstanceLock();
+if(!firstInstance) app.quit();
+app.on('second-instance',()=>{
+  if(mainWindow&&!mainWindow.isDestroyed()){
+    if(mainWindow.isMinimized())mainWindow.restore();
+    mainWindow.focus();
+  }
+});
 let mainWindow;
 let updatesController;
 let serverRefreshInterval;
@@ -275,7 +283,7 @@ function createWindow() {
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
 }
 
-app.whenReady().then(() => {
+if(firstInstance)app.whenReady().then(() => {
   if (process.platform === 'win32') app.setAppUserModelId('de.lafamilia.minecraftlauncher');
   modpackManager=createModpackManager({
     gameDir:getGameDirectory(),
