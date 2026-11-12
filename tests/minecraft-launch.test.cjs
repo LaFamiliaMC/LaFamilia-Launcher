@@ -66,6 +66,31 @@ test('Windows Store Profil wird ergänzt und Account-/andere Profile bleiben erh
   const backupsNow=(await fs.readdir(env.minecraftRoot)).filter(name=>name.includes('lafamilia-backup'));
   assert.equal(backupsNow.length,1);
 });
+test('Spielstart markiert nur unser Profil als zuletzt verwendet und lässt andere Profile unberührt',async t=>{
+  const env=await setup(t), processRunning=async()=>false, now=new Date('2026-11-12T20:00:00.000Z');
+  const result=await prepareProfile({...env,ramGb:6,processRunning,preferForPlay:true,now});
+  assert.equal(result.ok,true);
+  let actual=JSON.parse(await fs.readFile(env.profilePath,'utf8'));
+  assert.equal(actual.profiles[ID].lastUsed,now.toISOString());
+  assert.deepEqual(actual.profiles['existing-player'],env.original.profiles['existing-player']);
+  assert.deepEqual(actual.settings,env.original.settings);
+  assert.deepEqual(actual.authenticationDatabase,env.original.authenticationDatabase);
+  const again=await prepareProfile({...env,ramGb:6,processRunning,preferForPlay:true,now:new Date('2026-11-12T20:05:00.000Z')});
+  assert.equal(again.unchanged,true);
+  assert.equal((await fs.readdir(env.minecraftRoot)).filter(v=>v.includes('lafamilia-backup')).length,1);
+  const later=await prepareProfile({...env,ramGb:6,processRunning,preferForPlay:true,now:new Date('2026-11-12T20:15:00.000Z')});
+  assert.equal(later.unchanged,false);
+  actual=JSON.parse(await fs.readFile(env.profilePath,'utf8'));
+  assert.equal(actual.profiles[ID].lastUsed,'2026-11-12T20:15:00.000Z');
+});
+test('Manuelles Vorbereiten des Profils verändert die zuletzt-gespielt-Auswahl nicht',async t=>{
+  const env=await setup(t);
+  const result=await prepareProfile({...env,ramGb:6,processRunning:async()=>false});
+  assert.equal(result.ok,true);
+  const data=JSON.parse(await fs.readFile(env.profilePath,'utf8'));
+  assert.equal(data.profiles[ID].lastUsed,undefined);
+  assert.equal(data.settings.profileSorting,undefined);
+});
 test('Wenn offizielle Minecraft Launcher läuft, wird Profil nicht überschrieben',async t=>{
   const env=await setup(t);
   const before=await fs.readFile(env.profilePath,'utf8');

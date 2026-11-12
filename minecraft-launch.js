@@ -87,7 +87,7 @@ async function readLauncherProfiles(file){
   }
   return parsed;
 }
-async function prepareProfile({minecraftRoot,gameDir,ramGb,processRunning=launcherProcessRunning}){
+async function prepareProfile({minecraftRoot,gameDir,ramGb,processRunning=launcherProcessRunning,preferForPlay=false,now=new Date()}){
   if(!validRam(ramGb))throw Error('RAM-Einstellung außerhalb des gültigen Bereichs.');
   const installation=await locateInstallation(minecraftRoot);
   if(!installation)return {ok:false,code:'no_launcher_profiles',
@@ -99,7 +99,16 @@ async function prepareProfile({minecraftRoot,gameDir,ramGb,processRunning=launch
   if(await processRunning())return {ok:false,code:'launcher_running',
     message:'Bitte den offiziellen Minecraft Launcher vollständig schließen und danach erneut versuchen.'};
   const data=await readLauncherProfiles(file);
-  const profile=buildProfile({existing:data.profiles[ID],versionId:versions[0],gameDir,ramGb});
+  const profile=buildProfile({existing:data.profiles[ID],versionId:versions[0],gameDir,ramGb,now});
+  // Bei einem echten Startversuch das La-Familia-Profil in der "zuletzt gespielt"-Liste
+  // nach oben bringen. Das wählt im offiziellen Launcher NICHT automatisch das Profil aus.
+  // Zeitstempel nur in größeren Abständen ändern, damit keine Backup-Flut entsteht.
+  if(preferForPlay){
+    const previous=Date.parse(profile.lastUsed||'');
+    if(!Number.isFinite(previous)||now.getTime()-previous>10*60*1000){
+      profile.lastUsed=now.toISOString();
+    }
+  }
   const before=JSON.stringify(data.profiles[ID]||null);
   if(before===JSON.stringify(profile))return {ok:true,unchanged:true,versionId:versions[0],
     profileName:NAME,profileFile:file,gameDir};

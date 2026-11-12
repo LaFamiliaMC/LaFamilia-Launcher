@@ -454,13 +454,13 @@ if(firstInstance)app.whenReady().then(() => {
     const ram=await readSettings();
     const profile=await prepareProfile({
       minecraftRoot:path.join(app.getPath('appData'),'.minecraft'),
-      gameDir:getGameDirectory(),ramGb:ram.ramGb
+      gameDir:getGameDirectory(),ramGb:ram.ramGb,preferForPlay:true
     });
     if(!profile.ok)return profile;
     const launched=await openOfficialLauncher();
     return {ok:true,code:'launcher_open_requested',profileName:profile.profileName,versionId:profile.versionId,
       profileFile:profile.profileFile,gameDir:profile.gameDir,ramGb:ram.ramGb,requested:launched.requested,
-      message:'Offizieller Minecraft Launcher wird geöffnet. Bitte La Familia – Piraten Update auswählen und dort Spielen klicken.'};
+      message:'La Familia – Piraten Update ist eingerichtet (Fabric 1.21.1 / Loader 0.19.5). Der offizielle Minecraft Launcher wird geöffnet. Dort bitte die Installation „La Familia – Piraten Update“ auswählen und auf „Spielen“ klicken.'};
   });
   ipcMain.handle('game:open-folder', async (event) => {
     getTrustedWindow(event);
