@@ -8,6 +8,7 @@ const UUID=/^[a-f0-9]{32}$/i;
 const NAME=/^[a-zA-Z0-9_]{3,16}$/;
 const PNG=Buffer.from([137,80,78,71,13,10,26,10]);
 const CACHE_MS=15*60*1000;
+const MAX_CHOICE_BYTES=1024;
 function normalizeUuid(value){
   const id=typeof value==='string'?value.replace(/-/g,'').toLowerCase():'';
   return UUID.test(id)?id:null;
@@ -18,10 +19,21 @@ function publicIdentity(id,name){
 }
 function accountFromModern(data){
   if(!data||typeof data!=='object'||!data.accounts||typeof data.accounts!=='object')return null;
-  const key=data.activeAccountLocalId;
-  if(typeof key!=='string'||!Object.prototype.hasOwnProperty.call(data.accounts,key))return null;
-  const profile=data.accounts[key]?.minecraftProfile;
-  return publicIdentity(profile?.id,profile?.name);
+  // Der offizielle Launcher hat mehrere Kontodatei-Versionen.
+  // Immer nur das ausdrücklich aktive Konto verwenden, niemals einfach das erste.
+  const selected=data.activeAccountLocalId||data.activeAccountId||data.activeAccount;
+  const key=typeof selected==='string'?selected:
+    typeof selected?.localId==='string'?selected.localId:
+    typeof selected?.id==='string'?selected.id:null;
+  if(!key||!Object.prototype.hasOwnProperty.call(data.accounts,key))return null;
+  const account=data.accounts[key];
+  const candidates=[account?.minecraftProfile,account?.profile,account?.minecraft?.profile,account];
+  for(const candidate of candidates){
+    const identity=publicIdentity(candidate?.id||candidate?.uuid,
+      candidate?.name||candidate?.username);
+    if(identity)return identity;
+  }
+  return null;
 }
 function accountFromLegacy(data){
   if(!data||typeof data!=='object')return null;
@@ -52,10 +64,14 @@ async function limitedJson(file){
 }
 async function readActiveAccount({minecraftRoot,localAppData=process.env.LOCALAPPDATA}={}){
   const store=localAppData?path.join(localAppData,'Packages','Microsoft.4297127D64EC6_8wekyb3d8bbwe','LocalCache','Local','minecraft'):null;
-  const roots=[minecraftRoot,store].filter(Boolean);
+  const storeLocal=localAppData?path.join(localAppData,'Packages',
+    'Microsoft.4297127D64EC6_8wekyb3d8bbwe','LocalCache','Local'):null;
+  const roots=[minecraftRoot,store,storeLocal].filter(Boolean);
   for(const root of [...new Set(roots)]){
-    const modern=accountFromModern(await limitedJson(path.join(root,'launcher_accounts.json')));
-    if(modern)return modern;
+    for(const accountsFile of ['launcher_accounts.json','launcher_accounts_microsoft_store.json']){
+      const modern=accountFromModern(await limitedJson(path.join(root,accountsFile)));
+      if(modern)return modern;
+    }
     for(const profileFile of ['launcher_profiles_microsoft_store.json','launcher_profiles.json']){
       const legacy=accountFromLegacy(await limitedJson(path.join(root,profileFile)));
       if(legacy)return legacy;
@@ -68,9 +84,11 @@ function requestBytes(url,{timeoutMs=10000,maxBytes=512*1024}={}){
   const session=parsed.hostname==='sessionserver.mojang.com'&&
     /^\/session\/minecraft\/profile\/[0-9a-f]{32}$/.test(parsed.pathname);
   const texture=parsed.hostname==='textures.minecraft.net'&&
-    /^\/texture\/[0-9a-f]{32,128}$/.test(parsed.pathname);
+    /^\/texture\/[0-9a-f]{32,128}$/i.test(parsed.pathname);
+  const lookup=parsed.hostname==='api.minecraftservices.com'&&
+    /^\/minecraft\/profile\/lookup\/name\/[A-Za-z0-9_]{3,16}$/.test(parsed.pathname);
   if(parsed.protocol!=='https:'||parsed.port||parsed.username||parsed.password||parsed.hash||
-     (!session&&!texture)||parsed.search)throw Error('Unzulässige Profiladresse.');
+     (!session&&!texture&&!lookup)||parsed.search)throw Error('Unzulässige Profiladresse.');
   return new Promise((resolve,reject)=>{
     const req=https.get(parsed,{headers:{'User-Agent':'LaFamilia-Launcher/Profile','Accept':'application/octet-stream'}},res=>{
       if(res.statusCode!==200){res.resume();reject(Error('Mojang HTTP '+res.statusCode));return;}
