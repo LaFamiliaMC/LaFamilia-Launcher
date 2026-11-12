@@ -5,7 +5,7 @@ Dieses Testupdate verwendet ausschließlich:
 - Minecraft Java Edition **1.21.1**
 - Fabric Loader **0.19.5** (Versions-ID `fabric-loader-0.19.5-1.21.1`)
 
-Beim Klick auf **Spiel starten** prüft der Launcher diese exakte Kombination. Ist sie noch nicht vorhanden, lädt er den offiziellen Fabric Installer 1.1.2 nach einer SHA-256-Prüfung und führt ihn ohne GUI mit `client -dir <Minecraft-Ordner> -mcversion 1.21.1 -loader 0.19.5 -noprofile` aus. Anschließend kontrolliert der Launcher, ob tatsächlich die gewünschte Version installiert wurde.
+Beim Klick auf **Spiel starten** prüft der Launcher diese exakte Kombination. Ist sie noch nicht vorhanden, lädt er die offizielle Fabric Installer 1.1.2 JAR nach einer SHA-256-Prüfung und führt sie über Minecrafts Java ohne GUI mit `java -jar <Installer> client -dir <Minecraft-Ordner> -mcversion 1.21.1 -loader 0.19.5 -noprofile` aus. Anschließend kontrolliert der Launcher, ob tatsächlich die gewünschte Version installiert wurde.
 
 Das bestehende La-Familia-Profil erhält genau die Zielversions-ID. Andere Minecraft-/Fabric-Versionen und Profile werden nicht gelöscht, geändert oder auf eine beliebige aktuelle Loader-Version umgestellt. Das Original-Minecraft-Profil wird weiterhin vor Änderungen gesichert.
 

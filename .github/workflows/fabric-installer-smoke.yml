@@ -17,7 +17,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
       - name: Fabric unit tests
         run: node --test tests/fabric-auto-install.test.cjs
-      - name: Official Fabric Windows EXE checksum and CLI test
+      - name: Official Fabric JAR checksum and Windows CLI installation test
         run: node scripts/verify-fabric-cli.cjs

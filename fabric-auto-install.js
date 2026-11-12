@@ -1,6 +1,6 @@
 'use strict';
-// Offiziellen FabricMC Windows-Installer headless ausführen – nur für Minecraft Java 1.21.1.
-// Die .exe sowie deren SHA-256 werden ausschließlich vom offiziellen Maven geladen.
+// Offiziellen FabricMC JAR-Installer mit Minecrafts Java headless ausführen – nur für Minecraft Java 1.21.1.
+// Die .jar sowie deren SHA-256 werden ausschließlich vom offiziellen Maven geladen.
 const path=require('node:path');
 const fs=require('node:fs/promises');
 const https=require('node:https');
@@ -10,17 +10,17 @@ const {promisify}=require('node:util');
 const {MC_VERSION,LOADER_VERSION,FABRIC_VERSION_ID,locateInstallation,installedFabricVersions,launcherProcessRunning}=require('./minecraft-launch');
 const runFile=promisify(execFile);
 const INSTALLER_VERSION='1.1.2';
-const FILENAME='fabric-installer-'+INSTALLER_VERSION+'.exe';
+const FILENAME='fabric-installer-'+INSTALLER_VERSION+'.jar';
 const ARTIFACT_URL='https://maven.fabricmc.net/net/fabricmc/fabric-installer/'+INSTALLER_VERSION+'/'+FILENAME;
 const CHECKSUM_URL=ARTIFACT_URL+'.sha256';
-const MAX_EXECUTABLE_BYTES=6*1024*1024;
+const MAX_INSTALLER_BYTES=16*1024*1024;
 function verifySource(url){
   const u=new URL(url);
   if(u.protocol!=='https:'||u.hostname!=='maven.fabricmc.net'||u.port||u.username||u.password||u.hash||u.search
     ||![ARTIFACT_URL,CHECKSUM_URL].includes(u.toString()))throw Error('Unzulässige Fabric-Downloadadresse.');
   return u;
 }
-function downloadBuffer(url,{getter=https.get,maxBytes=MAX_EXECUTABLE_BYTES,timeoutMs=45000}={}){
+function downloadBuffer(url,{getter=https.get,maxBytes=MAX_INSTALLER_BYTES,timeoutMs=45000}={}){
   verifySource(url);
   return new Promise((resolve,reject)=>{
     const req=getter(url,{headers:{'User-Agent':'LaFamilia-Launcher/Fabric-Setup','Accept':'application/octet-stream'}},res=>{
@@ -51,36 +51,74 @@ async function obtainInstaller(cacheDir,{fetchFile=downloadBuffer,update=()=>{}}
   await fs.mkdir(cacheDir,{recursive:true});
   update('Prüfe offizielle FabricMC-Prüfsumme …');
   const expected=parseSha256(await fetchFile(CHECKSUM_URL,{maxBytes:512}));
-  const exe=path.join(cacheDir,FILENAME);
+  const jar=path.join(cacheDir,FILENAME);
   let cached;
   try{
-    const stat=await fs.lstat(exe);
-    if(stat.isFile()&&!stat.isSymbolicLink()&&stat.size>0&&stat.size<=MAX_EXECUTABLE_BYTES){
-      cached=await fs.readFile(exe);
+    const stat=await fs.lstat(jar);
+    if(stat.isFile()&&!stat.isSymbolicLink()&&stat.size>0&&stat.size<=MAX_INSTALLER_BYTES){
+      cached=await fs.readFile(jar);
     }
   }catch(error){if(error.code!=='ENOENT')throw error;}
-  if(cached&&checksum(cached)===expected){update('Fabric Installer vorhanden und verifiziert.');return exe;}
+  if(cached&&checksum(cached)===expected){update('Fabric Installer vorhanden und verifiziert.');return jar;}
   update('Lade offiziellen Fabric Installer '+INSTALLER_VERSION+' …');
-  const data=await fetchFile(ARTIFACT_URL,{maxBytes:MAX_EXECUTABLE_BYTES});
+  const data=await fetchFile(ARTIFACT_URL,{maxBytes:MAX_INSTALLER_BYTES});
   if(!data.length||checksum(data)!==expected)throw Error('Fabric Installer SHA-256 stimmt nicht: Installation abgebrochen.');
   const partial=path.join(cacheDir,FILENAME+'.'+process.pid+'.tmp');
   try{
     await fs.writeFile(partial,data,{flag:'wx'});
-    // Unter Windows lässt sich eine bereits vorhandene, beschädigte EXE nicht zuverlässig per rename ersetzen.
-    await fs.rm(exe,{force:true});
-    await fs.rename(partial,exe);
+    // Unter Windows lässt sich eine bereits vorhandene, beschädigte JAR nicht zuverlässig per rename ersetzen.
+    await fs.rm(jar,{force:true});
+    await fs.rename(partial,jar);
   }catch(error){await fs.rm(partial,{force:true}).catch(()=>{});throw error;}
-  return exe;
+  return jar;
 }
-async function executeFabricInstaller(exe,root,{run=runFile}={}){
-  const args=['client','-dir',root,'-mcversion',MC_VERSION,'-loader',LOADER_VERSION,'-noprofile'];
-  try{
-    await run(exe,args,{windowsHide:true,timeout:240000,maxBuffer:1024*1024});
-  }catch(error){
-    const details=String(error.stderr||error.stdout||error.message).slice(-700);
-    throw Error('Offizieller Fabric Installer konnte nicht abgeschlossen werden: '+details);
+const JAVA_RUNTIMES=['java-runtime-epsilon','java-runtime-delta','java-runtime-gamma','java-runtime-beta'];
+async function isRegularJavaFile(file){
+  try{const stat=await fs.lstat(file);return stat.isFile()&&!stat.isSymbolicLink();}
+  catch(error){if(error.code==='ENOENT')return false;throw error;}
+}
+// Minecraft liefert auf Windows normalerweise eine eigene Java-Laufzeit mit.
+// Nur wenn keine lokale Laufzeit auffindbar ist, wird Java aus PATH verwendet.
+async function findJavaExecutable(minecraftRoot,{env=process.env,exists=isRegularJavaFile}={}){
+  const storeRoot=env.LOCALAPPDATA
+    ? path.join(env.LOCALAPPDATA,'Packages','Microsoft.4297127D64EC6_8wekyb3d8bbwe','LocalCache','Local','minecraft')
+    : null;
+  const roots=[minecraftRoot,storeRoot,
+    env['ProgramFiles(x86)']?path.join(env['ProgramFiles(x86)'],'Minecraft Launcher'):null,
+    env.ProgramFiles?path.join(env.ProgramFiles,'Minecraft Launcher'):null].filter(Boolean);
+  const arches=process.arch==='arm64'?['windows-arm64','windows-x64']
+    :process.arch==='ia32'?['windows-x86']:['windows-x64','windows-x86'];
+  for(const root of new Set(roots)){
+    for(const arch of arches){
+      for(const name of JAVA_RUNTIMES){
+        for(const executable of ['java.exe','javaw.exe']){
+          const candidate=path.join(root,'runtime',name,arch,name,'bin',executable);
+          if(await exists(candidate))return candidate;
+        }
+      }
+    }
   }
-  return {exe,args};
+  if(env.JAVA_HOME){
+    for(const executable of ['java.exe','javaw.exe']){
+      const candidate=path.join(env.JAVA_HOME,'bin',executable);
+      if(await exists(candidate))return candidate;
+    }
+  }
+  return 'java';
+}
+async function executeFabricInstaller(jar,root,{run=runFile,findJava=findJavaExecutable}={}){
+  const java=await findJava(root);
+  const args=['-jar',jar,'client','-dir',root,'-mcversion',MC_VERSION,'-loader',LOADER_VERSION,'-noprofile'];
+  try{
+    await run(java,args,{windowsHide:true,timeout:240000,maxBuffer:2*1024*1024});
+  }catch(error){
+    if(error.code==='ENOENT'){
+      throw Error('Keine Java-Laufzeit gefunden. Bitte den offiziellen Minecraft Launcher einmal starten, Minecraft 1.21.1 vorbereiten und erneut versuchen.');
+    }
+    const details=String(error.stderr||error.stdout||error.message).slice(-700);
+    throw Error('Offizieller Fabric JAR-Installer konnte nicht abgeschlossen werden: '+details);
+  }
+  return {java,jar,args};
 }
 async function ensureFabric({minecraftRoot,userData,update=()=>{},inspect=locateInstallation,
   versions=installedFabricVersions,isLauncherRunning=launcherProcessRunning,
@@ -92,15 +130,15 @@ async function ensureFabric({minecraftRoot,userData,update=()=>{},inspect=locate
   if(await isLauncherRunning())return {ok:false,code:'launcher_running',
     message:'Bitte den offiziellen Minecraft Launcher schließen, damit Fabric sicher installiert werden kann.'};
   update('Fabric Loader '+LOADER_VERSION+' für Minecraft '+MC_VERSION+' fehlt – automatische Installation beginnt …');
-  const exe=await download(path.join(userData,'fabric-installer-cache'),{update});
+  const jar=await download(path.join(userData,'fabric-installer-cache'),{update});
   if(await isLauncherRunning())return {ok:false,code:'launcher_running',
     message:'Minecraft Launcher wurde während des Downloads geöffnet. Bitte schließen und erneut versuchen.'};
   update('Installiere Fabric Loader '+LOADER_VERSION+' für Minecraft '+MC_VERSION+' über den offiziellen Installer …');
-  await execute(exe,installation.root);
+  await execute(jar,installation.root);
   installed=await versions(installation.root);
   if(!installed.includes(FABRIC_VERSION_ID))throw Error('Die benötigte Fabric-Version '+FABRIC_VERSION_ID+' wurde nach der Installation nicht erkannt.');
   update('Fabric Loader '+LOADER_VERSION+' für Minecraft '+MC_VERSION+' wurde installiert.');
   return {ok:true,code:'installed',versionId:FABRIC_VERSION_ID};
 }
 module.exports={INSTALLER_VERSION,FILENAME,ARTIFACT_URL,CHECKSUM_URL,verifySource,
-  parseSha256,checksum,downloadBuffer,obtainInstaller,executeFabricInstaller,ensureFabric};
+  parseSha256,checksum,downloadBuffer,obtainInstaller,findJavaExecutable,executeFabricInstaller,ensureFabric};

@@ -26,11 +26,30 @@ test('Hash-Abweichung verhindert EXE-Installation',async t=>{
   await assert.rejects(m.obtainInstaller(dir,{fetchFile:async url=>url===m.CHECKSUM_URL?Buffer.from('f'.repeat(64)):bytes}),/SHA-256 stimmt nicht/);
   await assert.rejects(fs.stat(path.join(dir,m.FILENAME)),{code:'ENOENT'});
 });
-test('Fabric CLI installiert Client 1.21.1 ohne zusätzliches Profil',async()=>{
+test('Fabric JAR-CLI nutzt Java und installiert genau Client 1.21.1/0.19.5 ohne extra Profil',async()=>{
   let opts;
-  await m.executeFabricInstaller('C:\\Tools\\Fabric.exe','C:\\Minecraft',{run:async(exe,args,params)=>{opts={exe,args,params};return {stdout:'ok'};}});
-  assert.deepEqual(opts.args,['client','-dir','C:\\Minecraft','-mcversion','1.21.1','-loader','0.19.5','-noprofile']);
+  await m.executeFabricInstaller('C:\\Tools\\fabric-installer.jar','C:\\Minecraft',{
+    findJava:async()=> 'C:\\Minecraft\\runtime\\java.exe',
+    run:async(exe,args,params)=>{opts={exe,args,params};return {stdout:'ok'};}
+  });
+  assert.equal(opts.exe,'C:\\Minecraft\\runtime\\java.exe');
+  assert.deepEqual(opts.args,['-jar','C:\\Tools\\fabric-installer.jar','client','-dir','C:\\Minecraft','-mcversion','1.21.1','-loader','0.19.5','-noprofile']);
   assert.equal(opts.params.windowsHide,true);
+});
+test('Minecrafts gebündeltes Java hat Vorrang vor JAVA_HOME und PATH',async t=>{
+  const root=await tmp(t);
+  const java=path.join(root,'runtime','java-runtime-delta','windows-x64','java-runtime-delta','bin','java.exe');
+  await fs.mkdir(path.dirname(java),{recursive:true});
+  await fs.writeFile(java,'test');
+  if(process.arch==='arm64'||process.arch==='ia32')return;
+  assert.equal(await m.findJavaExecutable(root,{env:{JAVA_HOME:path.join(root,'andere-java')}}),java);
+});
+test('JAVA_HOME wird genutzt, falls Minecraft-Java noch fehlt',async t=>{
+  const root=await tmp(t),home=path.join(root,'jdk');
+  const java=path.join(home,'bin','java.exe');
+  await fs.mkdir(path.dirname(java),{recursive:true});
+  await fs.writeFile(java,'test');
+  assert.equal(await m.findJavaExecutable(path.join(root,'ohne-runtime'),{env:{JAVA_HOME:home}}),java);
 });
 test('Vorhandenes Fabric wird nicht neu installiert',async()=>{
   let requests=0;
