@@ -74,12 +74,14 @@ async function fileHash(file){
 async function inspectFile(root,rel){
   // Prüft jeden Pfadbestandteil, damit ein vorhandener Symlink/Junction niemals gefolgt wird.
   let p=root;
-  for(const piece of rel.split('/')){
+  const parts=rel.split('/');
+  for(let i=0;i<parts.length;i++){
+    const piece=parts[i];
     p=path.join(p,piece);
     let st;
     try{st=await fs.lstat(p);}catch(error){if(error.code==='ENOENT')return null;throw error;}
     if(st.isSymbolicLink())throw Error('Symlink/Junction im Spielordner nicht unterstützt: '+rel);
-    if(piece!==rel.split('/').at(-1)&&!st.isDirectory())throw Error('Dateipfad enthält eine Datei als Ordner: '+rel);
+    if(i<parts.length-1&&!st.isDirectory())throw Error('Dateipfad enthält eine Datei als Ordner: '+rel);
   }
   const st=await fs.lstat(p);
   if(!st.isFile())throw Error('Ziel ist keine normale Datei: '+rel);

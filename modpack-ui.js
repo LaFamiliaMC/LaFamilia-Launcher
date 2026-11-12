@@ -43,6 +43,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   panel.append(heading,message,stats,progressRow,actions,hints,conflictWrapper);
   main.prepend(panel);
   let lastPhase=null;
+  let installConfirmed=false;
   function formatBytes(n){
     if(!Number.isFinite(n)||n<1)return '0 MB';
     return (n/1024/1024).toLocaleString('de-DE',{maximumFractionDigits:1})+' MiB';
@@ -50,6 +51,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   function render(state){
     if(!state||typeof state!=='object')return;
     const working=['checking','downloading','verifying','installing','recovering'].includes(state.phase);
+    if(working)installConfirmed=false;
     message.textContent=String(state.message||'Bereit');
     version.textContent='Fabric 1.21.1 · '+(state.version?'Modpack '+state.version:'GitHub');
     counts.textContent=[
@@ -91,15 +93,20 @@ document.addEventListener('DOMContentLoaded',()=>{
     try{render(await fn());}
     catch(error){message.textContent='Fehler: '+error.message;}
   };
-  check.addEventListener('click',()=>{if(api?.checkModpackUpdates)void handle(api.checkModpackUpdates);});
+  check.addEventListener('click',()=>{installConfirmed=false;if(api?.checkModpackUpdates)void handle(api.checkModpackUpdates);});
   install.addEventListener('click',()=>{
     if(!api?.installModpack)return;
-    if(!window.confirm('La Familia Modpack in %APPDATA%\\.minecraft\\la-familia installieren bzw. aktualisieren?\nVorhandene eigene Dateien bleiben erhalten.')){
+    if(!installConfirmed){
+      installConfirmed=true;
+      install.textContent='Jetzt wirklich installieren';
+      message.textContent='Bitte Installation durch erneuten Klick bestätigen. Eigene Dateien bleiben erhalten.';
       return;
     }
+    installConfirmed=false;
+    install.disabled=true;
     void handle(api.installModpack);
   });
-  cancel.addEventListener('click',()=>{if(api?.cancelModpackDownload)void handle(api.cancelModpackDownload);});
+  cancel.addEventListener('click',()=>{if(api?.cancelModpackDownload)void api.cancelModpackDownload();});
   if(api?.onModpackStatusChange&&api?.getModpackStatus){
     api.onModpackStatusChange(render);
     api.getModpackStatus().then(render).catch(error=>{message.textContent='Statusfehler: '+error.message;});
