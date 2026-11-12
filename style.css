@@ -1,0 +1,719 @@
+/* ===============================================================
+   LA FAMILIA – BILDGENAUES OVERLAY
+   WICHTIG: Hier werden KEINE Holz-/Goldrahmen nachgebaut.
+   Jedes Prozent ist relativ zur INTERNEN Zeichenfläche 1280 x 720.
+   Die gesamte Zeichenfläche wird durch renderer.js proportional skaliert.
+   assets/template-bg.png enthält alle dekorativen Elemente.
+   =============================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Almendra:wght@400;500;600;700&family=Cinzel:wght@500;600;700;800&display=swap');
+
+:root {
+  --wood: #2b1810;
+  --gold: #d4af37;
+  --parchment: #e8d5b5;
+  --ink: #2b180a;
+  --cream: #f8e7b9;
+  --green: #68dc18;
+  --shadow: 2px 2px 4px #000;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+body { background: #000; color: var(--cream); font: 12px Georgia, 'Times New Roman', serif; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+[hidden] { display: none !important; }
+
+#launcher-app {
+  /* Die interne 16:9-Zeichenfläche bleibt maßstabsgetreu. */
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1280px;
+  height: 720px;
+  transform-origin: top left;
+  transform: scale(1);
+  visibility: hidden; /* Einblenden erst nach der ersten Größenberechnung. */
+  overflow: hidden;
+  isolation: isolate;
+  background-image: url('assets/template-bg.png');
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: 100% 100%;
+}
+
+#launcher-app.layout-ready { visibility: visible; }
+
+/* Im Hintergrundbild war die Windows-Titelleiste fest hineingerendert.
+   Wir haben die oberen 14 Quellpixel abgeschnitten und den verbleibenden
+   Hintergrund auf 1280x720 gestreckt. Diese Transformation überträgt
+   dieselbe vertikale Verschiebung auf alle Klickflächen und dynamischen Texte.
+   y_neu = (y_alt - 14) * (720 / 706).
+   Die gesamte Oberfläche wird danach von renderer.js in X/Y fensterfüllend skaliert. */
+#launcher-overlay {
+  position: absolute;
+  inset: 0;
+  width: 1280px;
+  height: 720px;
+  transform-origin: top left;
+  transform: scaleY(1.0198300283286119) translateY(-14px);
+}
+
+/* Der sichtbare Bereich wird vollständig vom Launcher gefüllt. */
+html, body { background-color: #000; }
+
+/* Nur für Screenreader: Titel, Navigation und Play sind im Bild sichtbar. */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0,0,0,0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Ebenen sind vollständig transparent; kein zusätzlicher Rahmen. */
+#launcher-grid, #sidebar-left, #main-navigation, #main-content,
+#sidebar-right, #page-home, #welcome-panel, #welcome-background,
+#dashboard-cards, .dashboard-card, .sidebar-widget, .card-header,
+.card-footer, #mod-card-content, #news-container,
+#updates-card-content, #player-profile-content, #player-details,
+#player-statistics, #quest-tabs, #quest-list, #minimap-container,
+#friends-list, #window-controls {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+#launcher-grid, #sidebar-left, #main-navigation, #main-content,
+#sidebar-right, #page-home, #dashboard-cards { position: absolute; inset: 0; }
+#sidebar-left, #main-content, #sidebar-right { pointer-events: none; }
+#sidebar-left button, #main-content button, #main-content input,
+#sidebar-right button, #sidebar-right progress,
+#sidebar-left a, #main-content a { pointer-events: auto; }
+
+/* ===============================================================
+   TITELLEISTE – echte Fenster-Buttons über den gezeichneten Knöpfen
+   =============================================================== */
+#titlebar { position: absolute; inset: 0 0 auto; height: 7.0%; z-index: 30; pointer-events: none; background: transparent; border: 0; }
+#titlebar-drag-region {
+  position: absolute;
+  left: 0; top: 0;
+  width: 87%; height: 98%;
+  -webkit-app-region: drag;
+  pointer-events: auto;
+}
+#window-controls { position: absolute; inset: 0; pointer-events: none; }
+.image-button {
+  display: block;
+  position: absolute;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
+  color: transparent;
+  overflow: visible;
+  -webkit-app-region: no-drag;
+  transition: filter 140ms ease;
+}
+.image-button::after {
+  content: '';
+  position: absolute;
+  opacity: 0;
+  transition: opacity 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+  pointer-events: none;
+}
+.image-button:hover::after,
+.image-button:focus-visible::after {
+  opacity: 1;
+}
+.image-button:focus-visible,
+.card-text-button:focus-visible, .feature-button:focus-visible,
+.quest-tab:focus-visible { outline: 2px solid #f7d46d; outline-offset: 1px; }
+/* renderer.js aktualisiert die Buttontitel; der Text bleibt unsichtbar. */
+#btn-maximize { font-size: 0; }
+
+/* ===============================================================
+   LINKS – feste Hitboxes passend zu den geschnitzten Menüknöpfen
+   =============================================================== */
+.nav-button {
+  left: 2.45%;
+  width: 11.35%;
+  height: 4.17%;
+  pointer-events: auto;
+}
+#btn-home       { top: 22.10%; }
+#btn-mods       { top: 27.18%; }
+#btn-quests     { top: 32.18%; }
+#btn-worldmap   { top: 37.28%; }
+#btn-friends    { top: 42.33%; }
+#btn-profile    { top: 47.41%; }
+#btn-statistics { top: 52.45%; }
+#btn-settings   { top: 57.53%; }
+#btn-news       { top: 62.54%; }
+#btn-discord    { top: 67.62%; }
+.nav-button::after {
+  left: 2.2%; right: 2.2%; top: 8.5%; bottom: 8.5%;
+  border-radius: 5px;
+  box-shadow: inset 0 0 12px rgba(255, 221, 108, .26), 0 0 10px rgba(239, 177, 53, .36);
+}
+.nav-button:hover,
+.nav-button:focus-visible { filter: brightness(1.12); }
+.nav-button.active { /* der aktive Zustand darf den gebackenen Holzknopf nicht übermalen */ }
+
+/* ===============================================================
+   MITTE – bereits im PNG gezeichnete Texte und der Spielknopf
+   =============================================================== */
+#page-home { pointer-events: none; }
+#launcher-header, #welcome-content { pointer-events: none; }
+#play-area {
+  position: absolute;
+  left: 30.15%;
+  top: 49.95%;
+  width: 27.85%;
+  height: 8.10%;
+  pointer-events: none;
+}
+#btn-play { inset: 0; width: 100%; height: 100%; pointer-events: auto; }
+#btn-play::after {
+  left: 3.5%; right: 3.5%; top: 9%; bottom: 10%;
+  border-radius: 17px;
+  box-shadow: inset 0 0 18px rgba(255, 214, 84, .34), 0 0 18px rgba(245, 188, 55, .54);
+}
+#btn-play:hover,
+#btn-play:focus-visible { filter: brightness(1.15); }
+#play-progress-container {
+  position: absolute;
+  left: 12%; top: 108%; width: 77%;
+  display: flex; gap: 8px; align-items: center;
+  color: var(--cream); text-shadow: var(--shadow);
+  background: transparent; border: none;
+}
+#play-progress { width: 82%; }
+#play-progress-text { font: 700 11px Cinzel, Georgia, serif; }
+
+/* ===============================================================
+   DREI KARTEN – Originalrahmen aus dem Bild bleiben vollständig sichtbar
+   =============================================================== */
+.dashboard-card { position: absolute; pointer-events: none; }
+#card-mods    { left: 16.70%; top: 59.10%; width: 16.55%; height: 29.25%; }
+#card-news    { left: 33.65%; top: 59.10%; width: 19.15%; height: 29.25%; }
+#card-updates { left: 53.28%; top: 59.10%; width: 16.95%; height: 29.25%; }
+.card-header { display: none; } /* Überschriften sind auf template-bg.png */
+#mod-card-content, #news-container, #updates-card-content {
+  position: absolute;
+  left: 5.5%; top: 14.3%; width: 89%; height: 70.5%;
+  overflow: hidden;
+  padding: 2px;
+}
+#card-mods { color: var(--cream); text-shadow: 1px 1px 2px #000; }
+#card-news, #card-updates { color: var(--ink); text-shadow: none; }
+#card-news #news-container { left: 5.3%; width: 89.5%; }
+#card-updates #updates-card-content { left: 6.1%; width: 87.5%; }
+#card-mods p, #card-updates p { margin: 0 0 7px; line-height: 1.32; }
+.mods-count-line { font-weight: bold; }
+#installed-mod-count { color: #a7f762; font-variant-numeric: tabular-nums; }
+.hint-text { opacity: .81; font-size: 10.5px; }
+#mod-list, #friends-list { margin: 5px 0 0; padding: 0; list-style: none; }
+#mod-list { max-height: 105px; overflow-y: auto; overflow-x: hidden; }
+#mod-list li { padding: 2px 0; border: 0; background: transparent; overflow-wrap: anywhere; }
+#mod-list li::before { content: '✓'; color: #83ed36; margin-right: 7px; }
+#news-container { overflow-y: auto; }
+#news-container .news-item {
+  margin: 0 0 7px; padding: 0 0 5px;
+  border: 0; background: transparent;
+  font-size: 11px;
+}
+#news-container .news-item h3 { margin: 0 0 2px; font: bold 12px Georgia, serif; }
+#news-container .news-item p { margin: 0 0 3px; }
+#news-container .news-item img { display: none; }
+#news-loading-status { position: absolute; left: 6%; top: 83%; margin: 0; color: var(--ink); }
+#updates-card-content { font-size: 12px; }
+#auto-update-indicator { color: #7a9e29; }
+#update-status { font-weight: 700; }
+#update-progress-row { display: flex; align-items: center; gap: 5px; }
+#update-progress { width: 80%; }
+#update-percentage { white-space: nowrap; }
+.card-footer { position: absolute; left: 5%; bottom: 3.3%; width: 90%; height: 10%; text-align: center; }
+.card-text-button {
+  background: transparent; border: 0; padding: 3px 6px; max-width: 100%;
+  font: 700 10.5px Cinzel, Georgia, serif;
+  color: var(--cream); text-shadow: var(--shadow);
+  transition: filter 150ms ease, text-shadow 150ms ease;
+  pointer-events: auto;
+}
+.parchment-card .card-text-button { color: var(--ink); text-shadow: 1px 1px 1px #e8cd93; }
+.card-text-button:hover, .card-text-button:focus-visible { filter: brightness(1.1); text-shadow: 0 0 7px var(--gold); }
+
+/* ===============================================================
+   RECHTS – weder Überschriften noch Karte werden doppelt gezeichnet
+   =============================================================== */
+.sidebar-widget { position: absolute; pointer-events: none; }
+#widget-player-profile { left: 71.64%; top: 10.90%; width: 25.35%; height: 19.60%; }
+#widget-quests         { left: 71.64%; top: 31.15%; width: 25.35%; height: 15.20%; }
+#widget-worldmap       { left: 71.64%; top: 46.50%; width: 25.35%; height: 16.75%; }
+#widget-friends        { left: 71.64%; top: 63.25%; width: 25.35%; height: 24.90%; }
+#player-profile-content { position: absolute; left: 4.4%; top: 19.2%; width: 91.0%; height: 55%; }
+#player-details { position: absolute; inset: 0; color: var(--cream); text-shadow: var(--shadow); }
+#player-details h3 { font: bold 13px Cinzel, Georgia, serif; color: #f7d56f; margin: 0 0 4px; }
+#player-details p { display: inline-block; margin: 0 14px 2px 0; font-size: 11px; }
+#player-xp-bar { display: block; width: 90%; height: 10px; margin: 6px 0 3px; }
+#player-xp-text { font-size: 10px; }
+#player-avatar-container { display: none; } /* Der Spielerkopf wurde bewusst aus dem Artwork entfernt. */
+#player-statistics {
+  position: absolute; left: 4.4%; bottom: 7%; width: 91%;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  font-size: 9.2px; text-align: center; text-shadow: 1px 1px 2px #000;
+}
+#player-statistics > div { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#player-statistics strong { display: block; color: #f5d77d; }
+
+#quest-tabs { position: absolute; left: 4%; top: 24.0%; width: 92%; height: 18%; display: flex; justify-content: center; gap: 17px; pointer-events: auto; }
+.quest-tab { color: #f8df9c; background: transparent; border: none; padding: 0 8px; font: 600 10px Cinzel, Georgia, serif; text-shadow: var(--shadow); }
+.quest-tab.active, .quest-tab:hover, .quest-tab:focus-visible { color: #fff1aa; text-shadow: 0 0 8px #f8cb52; }
+#quest-list { position: absolute; left: 4.0%; top: 43%; width: 92%; height: 50%; overflow: hidden; }
+.quest-item { display: grid; grid-template-columns: minmax(0, 1fr) 31% 10%; align-items: center; gap: 5px; height: 33.33%; font-size: 9.5px; }
+.quest-item span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.quest-item span:last-child { text-align: right; font-size: 9px; }
+
+#minimap-container { position: absolute; inset: 0; }
+#btn-expand-map { left: 91.15%; top: 19.0%; width: 7.3%; height: 27%; pointer-events: auto; }
+#btn-expand-map::after {
+  left: 18%; right: 18%; top: 12%; bottom: 16%;
+  border-radius: 4px;
+  box-shadow: inset 0 0 7px rgba(255, 223, 109, .26), 0 0 8px rgba(233, 174, 49, .36);
+}
+#btn-expand-map:hover, #btn-expand-map:focus-visible { filter: brightness(1.12); }
+#widget-friends .friends-count { position: absolute; right: 4.1%; top: 19.0%; font-size: 10px; color: #b8e874; text-shadow: var(--shadow); }
+#friends-list { position: absolute; left: 5.0%; top: 24.0%; width: 90%; max-height: 59%; overflow-y: auto; font-size: 10.5px; }
+#friends-list li { padding: 3px 0; }
+#friends-status { position: absolute; left: 5%; top: 32%; font-size: 10px; opacity: .8; }
+#widget-friends #btn-show-all-friends { position: absolute; left: 4%; bottom: 9.5%; }
+
+/* Grün leuchtende Fortschrittsbalken – für XP, Quests, Downloads. */
+progress { appearance: none; -webkit-appearance: none; border: 0; height: 9px; background: transparent; }
+progress::-webkit-progress-bar { background: #110b07; box-shadow: inset 0 1px 4px #000; border-radius: 9px; }
+progress::-webkit-progress-value {
+  border-radius: 9px;
+  background: linear-gradient(#bcff6c 0%, #5cde10 42%, #1c920e 100%);
+  box-shadow: inset 0 0 3px #e1ffac, 0 0 5px #63e62e;
+}
+progress::-moz-progress-bar {
+  border-radius: 9px;
+  background: linear-gradient(#bcff6c, #55d719, #1c920e);
+  box-shadow: 0 0 5px #63e62e;
+}
+
+/* ===============================================================
+   SEKUNDÄRE SEITEN: Nur die MITTE austauschen, keine neuen Fenster.
+   Ein schlichtes dunkles Lesefeld verdeckt hier das eingebrannte Hero-Bild.
+   Es bekommt KEINEN zusätzlichen Holzrahmen / Goldrand.
+   =============================================================== */
+.secondary-page {
+  position: absolute;
+  left: 16.55%; top: 22.90%;
+  width: 53.65%; height: 65.3%;
+  padding: 20px 25px;
+  z-index: 9;
+  overflow: hidden;
+  pointer-events: auto;
+  background: rgba(29, 16, 10, .995);
+  border: none;
+  box-shadow: inset 0 0 45px rgba(0, 0, 0, .43);
+  color: #f3dfb5;
+}
+.secondary-page > h2 { margin: 0 0 14px; font: 700 23px Cinzel, Georgia, serif; color: #eed079; text-shadow: var(--shadow); }
+.secondary-page > div { background: transparent; border: none; width: 100%; max-height: 89%; overflow: hidden; }
+.page-entering { animation: page-appear 220ms ease-out; }
+@keyframes page-appear { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.settings-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.detail-panel { padding: 0; margin: 0; border: 0; background: transparent; min-width: 0; }
+.detail-panel h3 { margin: 0 0 7px; font: 700 14px Cinzel, Georgia, serif; color: #f6d777; text-shadow: var(--shadow); }
+.panel-explanation { margin: 0 0 12px; font-size: 11.5px; line-height: 1.5; }
+.ram-value-row { display: flex; align-items: center; justify-content: space-between; gap: 7px; margin: 11px 0; }
+.ram-value-row strong { color: #9cee57; }
+#ram-slider { display: block; width: 100%; accent-color: #83df36; }
+.slider-labels { display: flex; justify-content: space-between; }
+#ram-help, #system-memory, #ram-save-status, #folder-status { font-size: 11px; line-height: 1.5; }
+.path-field, .java-argument { display: block; max-width: 100%; padding: 6px 0; overflow-wrap: anywhere; color: #f7de9f; font-size: 11px; }
+.feature-button {
+  display: inline-block; padding: 7px 8px; margin-top: 9px;
+  color: #f2d070; font: 700 11px Cinzel, Georgia, serif;
+  text-shadow: var(--shadow); background: transparent; border: 0;
+}
+.feature-button:hover, .feature-button:focus-visible { filter: brightness(1.12); text-shadow: 0 0 9px #eeb847; }
+.detail-header { display: flex; justify-content: space-between; gap: 12px; }
+.mods-detail-panel { height: 100%; }
+.counter-badge { font: 700 12px Cinzel, Georgia, serif; color: #a2f65c; }
+#mods-page-status { font-size: 11px; margin: 8px 0; }
+#mods-page-list { list-style: none; height: 194px; overflow-y: auto; margin: 5px 0; padding: 0; }
+#mods-page-list li { padding: 3px 0; font-size: 11.5px; }
+#mods-page-list li::before { content: '✓'; color: #74e235; margin-right: 9px; }
+.mods-actions { display: flex; gap: 10px; }
+
+/* Benachrichtigungen erscheinen nur bei Aktionen, nicht als feste Rahmen. */
+#notification-container { position: absolute; left: 32%; bottom: 8%; width: 36%; z-index: 40; pointer-events: none; }
+.toast { margin-top: 5px; padding: 9px 12px; background: rgba(32, 18, 10, .94); border: 0; color: #f8e9be; text-align: center; text-shadow: var(--shadow); font-size: 12px; }
+#loading-overlay {
+  position: absolute; inset: 0; z-index: 50;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  background: rgba(17, 9, 5, .89);
+  border: 0; text-align: center;
+}
+#loading-spinner { font-size: 45px; color: var(--gold); animation: spin 2s linear infinite; }
+#loading-title { font: 700 22px Cinzel, Georgia, serif; color: #f5d678; text-shadow: var(--shadow); }
+#loading-progress { width: 280px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Innenlisten dürfen bei Bedarf scrollen. Das Fenster selbst NIE. */
+#mod-list::-webkit-scrollbar, #news-container::-webkit-scrollbar,
+#friends-list::-webkit-scrollbar, #mods-page-list::-webkit-scrollbar { width: 5px; }
+#mod-list::-webkit-scrollbar-thumb, #news-container::-webkit-scrollbar-thumb,
+#friends-list::-webkit-scrollbar-thumb, #mods-page-list::-webkit-scrollbar-thumb { background: rgba(200, 165, 91, .50); border-radius: 6px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+/* ============================================================
+   V0.8: Die linke Menueschrift liegt NICHT mehr im Hintergrundbild.
+   Echte SVG-Texte werden in der nativen Ausgabeauflösung gezeichnet.
+   Pointer-Events bleiben bei den vorhandenen HTML-Hitboxes.
+   ============================================================ */
+#crisp-labels {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 110;
+  display: block;
+  pointer-events: none;
+  overflow: hidden;
+}
+.crisp-nav-text {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -.25px;
+  fill: #faf0d2;
+  paint-order: stroke fill;
+  stroke: #291509;
+  stroke-width: .9px;
+  filter: drop-shadow(1px 1.5px 1px #050301);
+}
+.crisp-nav-text text { transition: fill 120ms ease, filter 120ms ease; }
+.crisp-nav-text text.is-hovered { fill: #fff2a2; filter: drop-shadow(0 0 3px #ffc63b); }
+.crisp-nav-text text.is-active { fill: #fff7d7; }
+
+/* V0.9 – Header im originalen Ornamentrahmen als Vektortext.
+   Die Holztafel ist im PNG textfrei; keine doppelte Druckschrift. */
+.vector-title-text {
+  font-family: 'Pirata One', 'Cinzel', Georgia, serif;
+  font-weight: 700;
+  fill: url(#vector-title-gold);
+  stroke: #562605;
+  stroke-width: 0.95px;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+}
+#vector-title-line-1 { font-size: 44px; }
+#vector-title-line-2 { font-size: 42px; }
+
+
+/* V1.1: Der Startbutton-Text ist bereits im Bild enthalten. */
+
+/* ===============================================================
+   V1.2 – Ein durchgängiges, passgenaues Mittelfenster für ALLE
+   Navigationsseiten. Rahmen/Planken/Pergament stammen aus dem
+   vorhandenen La-Familia-Hintergrund und liegen als Grafik-Assets vor.
+   Auf der Startseite bleibt das ursprüngliche Layout unberührt.
+   =============================================================== */
+.secondary-page {
+  left: 16.08%;
+  top: 21.55%;
+  width: 55.16%;
+  height: 68.0%;
+  padding: 0;
+  z-index: 9;
+  overflow: hidden;
+  pointer-events: auto;
+  background: url('assets/center-frame.png') center / 100% 100% no-repeat;
+  border: 0;
+  box-shadow: none;
+  color: #2b180a;
+}
+.secondary-page > h2 {
+  position: absolute;
+  left: 6.0%;
+  top: 22px;
+  margin: 0;
+  max-width: 85%;
+  color: #ffdf85;
+  font: 700 22px 'Cinzel', Georgia, serif;
+  line-height: 1.2;
+  text-shadow: 1px 2px 2px #090301, 0 0 10px #723a0e;
+  letter-spacing: .6px;
+}
+.secondary-page > h2::before {
+  content: '✦';
+  color: #fbc65b;
+  display: inline-block;
+  font-size: 16px;
+  margin-right: 12px;
+  vertical-align: 2px;
+}
+.secondary-page > div {
+  position: absolute;
+  left: 3.5%;
+  top: 16.0%;
+  width: 93%;
+  height: 79.5%;
+  max-height: none;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  border: none;
+}
+.secondary-page .detail-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  padding: 19px 20px 17px;
+  color: #2b180a;
+  background: #e8d5b5 url('assets/parchment-texture.png') center / 100% 100% no-repeat;
+  border: 2px solid #bc8027;
+  outline: 1px solid rgba(255, 215, 106, .68);
+  outline-offset: -5px;
+  box-shadow: inset 0 0 17px rgba(124, 68, 17, .32), 0 3px 8px #100702;
+  overflow: hidden;
+}
+.secondary-page .detail-panel::before,
+.secondary-page .detail-panel::after {
+  content: '❖';
+  position: absolute;
+  pointer-events: none;
+  color: #a36824;
+  font-size: 14px;
+  text-shadow: 0 1px #fff1c6;
+}
+.secondary-page .detail-panel::before { left: 6px; top: 2px; }
+.secondary-page .detail-panel::after { right: 6px; bottom: 2px; }
+.secondary-page .detail-panel h3 {
+  margin: 0 0 10px;
+  color: #57300e;
+  font: 700 15px 'Cinzel', Georgia, serif;
+  line-height: 1.2;
+  text-shadow: 0 1px #fff0c5;
+}
+.secondary-page .panel-explanation {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #573519;
+  margin: 0 0 12px;
+}
+.secondary-page .detail-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(148, 88, 27, .4);
+  padding-bottom: 8px;
+  margin-bottom: 11px;
+  gap: 14px;
+}
+.secondary-page .detail-header h3 { margin: 0; }
+.secondary-page .counter-badge {
+  white-space: nowrap;
+  font: 800 12px 'Cinzel', Georgia, serif;
+  color: #326310;
+  text-shadow: 0 1px #fff5d6;
+}
+.secondary-page .path-field {
+  padding: 8px 9px;
+  margin: 4px 0 10px;
+  border: 1px solid #c69d58;
+  background: rgba(251, 227, 172, .46);
+  color: #64360e;
+  font: 11px Consolas, monospace;
+  overflow-wrap: anywhere;
+}
+.secondary-page .feature-button {
+  background: linear-gradient(180deg, #4b2b18, #28140a 62%, #150903);
+  color: #ffe1a0;
+  border: 1px solid #c28d36;
+  box-shadow: inset 0 1px rgba(255, 207, 93, .36), 0 2px 3px rgba(23, 9, 0, .4);
+  font: 700 10px 'Cinzel', Georgia, serif;
+  text-shadow: 1px 2px 2px #000;
+  margin: 0;
+  padding: 10px 12px;
+  line-height: 1.2;
+  white-space: normal;
+  min-height: 35px;
+  transition: filter 130ms ease, box-shadow 130ms ease;
+}
+.secondary-page .feature-button:hover,
+.secondary-page .feature-button:focus-visible {
+  filter: brightness(1.14);
+  box-shadow: 0 0 9px rgba(241, 174, 56, .68), inset 0 1px #ffdf8d;
+}
+.secondary-page .feature-button:focus-visible,
+.secondary-page input:focus-visible { outline: 2px solid #df9b2b; outline-offset: 1px; }
+.secondary-page .mods-detail-panel { height: 100%; }
+.secondary-page .mods-detail-panel .panel-explanation { margin-bottom: 8px; }
+.secondary-page #mods-page-status { font: 11px Georgia, serif; color: #72502e; margin: 0; }
+.secondary-page #mods-page-list {
+  height: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin: 8px 0 12px;
+  padding: 7px 12px;
+  background: rgba(255, 243, 208, .39);
+  border: 1px solid rgba(144, 89, 25, .42);
+}
+.secondary-page #mods-page-list li {
+  font: 11.5px Georgia, serif;
+  line-height: 1.4;
+  color: #38220e;
+  padding: 4px 2px;
+  border-bottom: 1px solid rgba(164, 110, 45, .17);
+  overflow-wrap: anywhere;
+}
+.secondary-page .mods-actions { margin-top: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+.secondary-page .settings-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 100%;
+  gap: 16px;
+}
+.secondary-page .settings-columns .detail-panel { padding: 20px 17px; }
+.secondary-page .settings-columns .panel-explanation { min-height: 45px; }
+.secondary-page .ram-value-row { margin: 14px 0 9px; font-size: 11px; }
+.secondary-page .ram-value-row strong { color: #3a6d10; font: 700 14px 'Cinzel', Georgia, serif; }
+.secondary-page #ram-slider { width: 100%; accent-color: #4b9d1d; }
+.secondary-page .slider-labels { font-size: 11px; color: #69401c; margin: 6px 0; }
+.secondary-page #ram-help,
+.secondary-page #system-memory,
+.secondary-page #ram-save-status,
+.secondary-page #folder-status { font: 11px/1.45 Georgia, serif; color: #654020; }
+.secondary-page .java-argument { color: #64340e; font: 11px/1.5 Georgia, serif; padding: 8px 0; }
+.secondary-page .java-argument code { color: #385c17; font-weight: 700; }
+.secondary-page #settings-game-path { margin: 9px 0; }
+.secondary-page #btn-save-ram { margin-top: auto; }
+.secondary-page #btn-open-game-folder { margin-top: auto; }
+.secondary-page #btn-toggle-fullscreen { margin-top: 9px; }
+.secondary-page .detail-panel.info-panel {
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px 50px;
+  gap: 9px;
+}
+.secondary-page .info-panel .info-emblem {
+  font-size: 36px;
+  line-height: 1;
+  color: #9c671f;
+  filter: drop-shadow(1px 2px 1px rgba(95, 43, 6, .3));
+}
+.secondary-page .info-panel h3 { font-size: 21px; margin: 5px 0; }
+.secondary-page .info-panel p { max-width: 460px; font-size: 14px; line-height: 1.6; }
+.secondary-page .info-panel .info-footnote {
+  margin-top: 18px;
+  color: #794d1c;
+  letter-spacing: .5px;
+  font: 700 10px 'Cinzel', Georgia, serif;
+}
+.secondary-page #mods-page-list::-webkit-scrollbar,
+.secondary-page > div::-webkit-scrollbar { width: 5px; }
+.secondary-page #mods-page-list::-webkit-scrollbar-thumb,
+.secondary-page > div::-webkit-scrollbar-thumb { background: #9a6b2c; border-radius: 5px; }
+
+
+/* V1.2.1 – Langer Menüeintrag 'Einstellungen' optisch an die restlichen Buttons angleichen. */
+#label-nav-settings {
+  font-size: 14.2px;
+  letter-spacing: -0.35px;
+}
+
+
+/* V1.2.2 – Präzisere Hover-Zonen, einzeln auf die sichtbaren Hintergründe abgestimmt. */
+
+
+/* ==============================================================
+   V1.2.3 – Original-Lettering und exakt ausgerichtete Fenster-Icons.
+   Die Original-Buchstaben des Titels liegen transparent als PNG vor.
+   Die Menütexte nutzen eine schmalere mittelalterliche Schrift.
+   =============================================================== */
+.crisp-nav-text {
+  font-family: 'Almendra', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.15px;
+  stroke-width: 0.55px;
+  filter: drop-shadow(0.7px 1.2px 0.8px #050301);
+}
+#label-nav-settings {
+  font-size: 13.1px;
+  letter-spacing: -0.38px;
+}
+#crisp-main-title { filter: drop-shadow(0.8px 1.5px 1px rgba(9,3,0,.66)); }
+#crisp-main-title image { image-rendering: auto; }
+
+/* V1.2.6 – Hover-Flächen bildgenau zentriert und vergrößert.
+   Bildvorlage: 1672x941; sichtbare Icon-Zentren: x=1529, 1575.5 und 1622.5.
+   Segmente innerhalb der Goldleiste: x=1505–1552, 1552–1599, 1599–1646.
+   Die Prozentwerte beziehen sich auf die unveränderte 1280er Zeichenfläche,
+   die das Hintergrundbild auf dieselbe sichtbare Breite skaliert. */
+#btn-minimize, #btn-maximize, #btn-close {
+  top: 28%;
+  height: 64%;
+  width: 2.811%;
+  pointer-events: auto;
+  filter: none;
+}
+#btn-minimize { left: 90.012%; }
+#btn-maximize { left: 92.823%; }
+#btn-close    { left: 95.634%; }
+
+/* Deutlich breiter als vorher und mittig über dem Symbol. */
+#btn-minimize::after, #btn-maximize::after, #btn-close::after {
+  left: 2%; right: 2%; top: 7%; bottom: 8%;
+  border-radius: 5px;
+  background: radial-gradient(ellipse at center,
+    rgba(255, 212, 107, .29) 0%,
+    rgba(255, 203, 89, .17) 53%,
+    rgba(255, 190, 68, .04) 100%);
+  box-shadow: inset 0 0 9px rgba(255, 223, 122, .30),
+              0 0 7px rgba(237, 173, 47, .42);
+}
+#btn-minimize:hover, #btn-maximize:hover, #btn-close:hover,
+#btn-minimize:focus-visible, #btn-maximize:focus-visible, #btn-close:focus-visible {
+  filter: none;
+}
+
+/* V1.3.0: kleine Update-Aktion auf bestehendem Pergament, keine neuen Rahmen. */
+#btn-install-launcher-update { display: inline-block; background: transparent; border: 0; color: #603609; font: bold 10px Cinzel, Georgia, serif; padding: 3px 0; text-decoration: underline; cursor: pointer; }
+#btn-install-launcher-update:hover { color: #98620c; text-shadow: 0 0 5px #ffd460; }
+#settings-update-status { font-size: 10px; color: #603609; overflow-wrap: anywhere; }
+
+/* Klares dunkles Schriftbild auf dem Pergament der Updatekarte. */
+#card-updates #updates-card-content,
+#card-updates #updates-card-content p,
+#card-updates #auto-update-status,
+#card-updates #update-status,
+#card-updates #update-download-info,
+#card-updates #update-speed { color: #2b180a; text-shadow: none; }
+#card-updates #auto-update-indicator { color: #486d08; }
+#card-updates #updates-card-content p { margin-bottom: 4px; }

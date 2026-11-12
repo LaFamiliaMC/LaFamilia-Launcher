@@ -1,0 +1,82 @@
+name: La Familia Windows Setup
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  windows-installer:
+    runs-on: windows-latest
+    env:
+      LA_FAMILIA_UPDATES_OWNER: ${{ vars.LA_FAMILIA_UPDATES_OWNER || github.repository_owner }}
+      LA_FAMILIA_UPDATES_REPO: ${{ vars.LA_FAMILIA_UPDATES_REPO || github.event.repository.name }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Node.js setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: JavaScript syntax check
+        run: npm run check
+
+      - name: Updater unit tests
+        run: npm test
+
+      - name: Build LaFamilia-Setup.exe
+        run: npm run dist:win
+
+      - name: Installer and update metadata as downloadable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LaFamilia-Windows-Setup-${{ github.run_number }}
+          path: |
+            dist/LaFamilia-Setup-*.exe
+            dist/latest.yml
+            dist/*.blockmap
+          if-no-files-found: error
+
+      # Release nur auf vX.Y.Z-Tags. Gleiches Repo: GITHUB_TOKEN.
+      # Anderes (öffentliches) Update-Repo: eigenes eingeschränktes Secret.
+      - name: Publish verified tag build to public updates repo
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          SOURCE_GITHUB_TOKEN: ${{ github.token }}
+          SEPARATE_RELEASE_TOKEN: ${{ secrets.LA_FAMILIA_RELEASES_TOKEN }}
+        run: |
+          if (-not $env:LA_FAMILIA_UPDATES_OWNER -or -not $env:LA_FAMILIA_UPDATES_REPO) {
+            throw 'Repo-Angaben für Updates fehlen. Keine Veröffentlichung.'
+          }
+          $targetRepo = "$env:LA_FAMILIA_UPDATES_OWNER/$env:LA_FAMILIA_UPDATES_REPO"
+          if ($targetRepo -eq $env:GITHUB_REPOSITORY) {
+            $env:GH_TOKEN = $env:SOURCE_GITHUB_TOKEN
+          } elseif ($env:SEPARATE_RELEASE_TOKEN) {
+            $env:GH_TOKEN = $env:SEPARATE_RELEASE_TOKEN
+          } else {
+            throw 'Für ein separates Update-Repo fehlt das Secret LA_FAMILIA_RELEASES_TOKEN.'
+          }
+          $tag = '${{ github.ref_name }}'
+          $actualVersion = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($tag -ne "v$actualVersion") {
+            throw "Tag $tag stimmt nicht mit package.json v$actualVersion überein."
+          }
+          $assets = @(Get-ChildItem dist -File | Where-Object {
+            $_.Name -match '^LaFamilia-Setup-.*\.exe$' -or
+            $_.Name -eq 'latest.yml' -or
+            $_.Name -like '*.blockmap'
+          } | ForEach-Object { $_.FullName })
+          if ($assets.Count -lt 2 -or -not (Test-Path 'dist/latest.yml')) {
+            throw 'Update-Metadaten/Setup fehlen. Kein Release ohne latest.yml.'
+          }
+          gh release create $tag @assets --repo $targetRepo --title "La Familia $actualVersion" --notes "La Familia Launcher Windows Setup $actualVersion" --latest

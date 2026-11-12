@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'">
+  <title>La Familia Launcher</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="renderer.js" defer></script>
+</head>
+<body>
+  <!-- Interne Zeichenfläche 1280 x 720 px, automatisch fensterfüllend skaliert.
+       Die komplette Holz-/Gold-/Pergament-Grafik liegt in template-bg.png.
+       Bereits in die Grafik eingebrannte Beschriftungen NICHT erneut anzeigen. -->
+  <div id="launcher-app">
+    <!-- Overlay auf die um 14 Bildpixel beschnittene Vorlage ausgerichtet. -->
+    <div id="launcher-overlay">
+
+    <!-- 1. Fenstertitel: die sichtbaren Knöpfe sind bereits auf dem Bild. -->
+    <header id="titlebar" aria-label="Fenstersteuerung">
+      <div id="titlebar-drag-region">
+        <span id="window-title" class="sr-only">La Familia Launcher</span>
+        <span id="launcher-version" class="sr-only">Version 1.3.0</span>
+      </div>
+      <div id="window-controls">
+        <button id="btn-minimize" type="button" class="image-button"
+                aria-label="Fenster minimieren" title="Minimieren"><span class="sr-only">Minimieren</span></button>
+        <button id="btn-maximize" type="button" class="image-button"
+                aria-label="Fenster maximieren" title="Maximieren"><span class="sr-only">Maximieren</span></button>
+        <button id="btn-close" type="button" class="image-button"
+                aria-label="Fenster schließen" title="Schließen"><span class="sr-only">Schließen</span></button>
+      </div>
+    </header>
+
+    <div id="launcher-grid">
+      <!-- 2. Linke Buttons: Icon und Text stehen bereits in template-bg.png. -->
+      <aside id="sidebar-left" aria-label="Hauptnavigation">
+        <div id="sidebar-brand" class="sr-only">La Familia</div>
+        <nav id="main-navigation" aria-label="Launcher-Menü">
+          <button id="btn-home" type="button" class="nav-button image-button active"
+                  data-page="home" aria-current="page"><span class="sr-only">Startseite</span></button>
+          <button id="btn-mods" type="button" class="nav-button image-button"
+                  data-page="mods"><span class="sr-only">Mods</span></button>
+          <button id="btn-quests" type="button" class="nav-button image-button"
+                  data-page="quests"><span class="sr-only">Quests</span></button>
+          <button id="btn-worldmap" type="button" class="nav-button image-button"
+                  data-page="worldmap"><span class="sr-only">Weltkarte</span></button>
+          <button id="btn-friends" type="button" class="nav-button image-button"
+                  data-page="friends"><span class="sr-only">Freunde</span></button>
+          <button id="btn-profile" type="button" class="nav-button image-button"
+                  data-page="profile"><span class="sr-only">Profil</span></button>
+          <button id="btn-statistics" type="button" class="nav-button image-button"
+                  data-page="statistics"><span class="sr-only">Statistik</span></button>
+          <button id="btn-settings" type="button" class="nav-button image-button"
+                  data-page="settings"><span class="sr-only">Einstellungen</span></button>
+          <button id="btn-news" type="button" class="nav-button image-button"
+                  data-page="news"><span class="sr-only">News</span></button>
+          <button id="btn-discord" type="button" class="nav-button image-button"
+                  data-action="open-discord"><span class="sr-only">Discord</span></button>
+        </nav>
+        <div id="sidebar-footer" class="sr-only">
+          <span id="sidebar-connection-status">Serverstatus noch nicht angebunden</span>
+          <span id="sidebar-version">La Familia v1.3.0</span>
+        </div>
+      </aside>
+
+      <!-- 3. Die Startseite benutzt nur transparente, exakt platzierte Layer. -->
+      <main id="main-content">
+        <section id="page-home" class="launcher-page" aria-labelledby="launcher-title">
+          <header id="launcher-header" class="sr-only">
+            <h1 id="launcher-title">La Familia Launcher</h1>
+            <p id="launcher-subtitle">Der Minecraft Launcher von La Familia</p>
+          </header>
+
+          <section id="welcome-panel" aria-labelledby="welcome-title">
+            <div id="welcome-background">
+              <div id="welcome-content" class="sr-only">
+                <h2 id="welcome-title">Willkommen bei La Familia!</h2>
+                <p id="welcome-description">Dein modifiziertes Minecraft-Erlebnis in einer lebendigen, mittelalterlichen Welt. Erkunde, baue, kämpfe, erfülle Quests und werde Teil unserer Community!</p>
+              </div>
+            </div>
+            <div id="play-area">
+              <button id="btn-play" type="button" class="image-button play-button"
+                      aria-describedby="play-status"><span class="sr-only">Spiel starten</span></button>
+              <p id="play-status" class="sr-only" role="status" aria-live="polite">Spielstart noch nicht angebunden</p>
+              <div id="play-progress-container" hidden>
+                <progress id="play-progress" max="100" value="0">0 %</progress>
+                <span id="play-progress-text">0 %</span>
+              </div>
+            </div>
+          </section>
+
+          <div id="dashboard-cards">
+            <!-- Holzfläche unten links: nur Daten darüber legen. -->
+            <section id="card-mods" class="dashboard-card" aria-labelledby="mod-card-title">
+              <header class="card-header"><h2 id="mod-card-title" class="sr-only">Modverwaltung</h2></header>
+              <div id="mod-card-content">
+                <p class="mods-count-line">Installierte Mods: <strong id="installed-mod-count">—</strong></p>
+                <p id="mod-status" class="hint-text" role="status" aria-live="polite"></p>
+                <ul id="mod-list" aria-label="Installierte Mods"></ul>
+              </div>
+              <footer class="card-footer">
+                <button id="btn-manage-mods" class="card-text-button" type="button">Mods verwalten</button>
+              </footer>
+            </section>
+
+            <!-- Helle Pergamentfläche unten in der Mitte. -->
+            <section id="card-news" class="dashboard-card parchment-card" aria-labelledby="news-card-title">
+              <header class="card-header"><h2 id="news-card-title" class="sr-only">Neuigkeiten</h2></header>
+              <div id="news-container" role="feed" aria-label="Neuigkeiten">
+                <!-- Artikel werden später dynamisch aus der News-JSON geladen. -->
+              </div>
+              <p id="news-loading-status" class="hint-text" role="status" aria-live="polite"></p>
+              <footer class="card-footer">
+                <button id="btn-all-news" class="card-text-button" type="button">Alle Neuigkeiten</button>
+              </footer>
+            </section>
+
+            <!-- Helle Pergamentfläche unten rechts der Mitte. -->
+            <section id="card-updates" class="dashboard-card parchment-card" aria-labelledby="updates-card-title">
+              <header class="card-header"><h2 id="updates-card-title" class="sr-only">Automatische Updates</h2></header>
+              <div id="updates-card-content">
+                <p><span id="auto-update-indicator" aria-hidden="true">○</span>
+                  <strong id="auto-update-status">Noch nicht verbunden</strong></p>
+                <p id="auto-update-description" class="hint-text">Updates werden später geprüft.</p>
+                <p id="update-status" role="status" aria-live="polite">Keine Prüfung aktiv</p>
+                <div id="update-progress-row" hidden>
+                  <progress id="update-progress" max="100" value="0">0 %</progress>
+                  <span id="update-percentage">0 %</span>
+                </div>
+                <p id="update-download-info"></p>
+                <p id="update-speed"></p>
+                <button type="button" id="btn-install-launcher-update" class="updater-action" hidden>Update jetzt installieren</button>
+              </div>
+              <footer class="card-footer">
+                <button id="btn-update-settings" class="card-text-button" type="button">Update-Einstellungen</button>
+              </footer>
+            </section>
+          </div>
+        </section>
+
+        <!-- 4. Zweitansichten: dieselbe Mitte, die Seitenleisten bleiben sichtbar.
+             renderer.js befüllt Modi- und Einstellungsansichten automatisch. -->
+        <section id="page-mods" class="launcher-page secondary-page" aria-labelledby="page-mods-title" hidden>
+          <h2 id="page-mods-title">Modverwaltung</h2><div id="mods-page-content"></div>
+        </section>
+        <section id="page-quests" class="launcher-page secondary-page" aria-labelledby="page-quests-title" hidden>
+          <h2 id="page-quests-title">Quests</h2><div id="quests-page-content"></div>
+        </section>
+        <section id="page-worldmap" class="launcher-page secondary-page" aria-labelledby="page-worldmap-title" hidden>
+          <h2 id="page-worldmap-title">Weltkarte</h2><div id="worldmap-page-content"></div>
+        </section>
+        <section id="page-friends" class="launcher-page secondary-page" aria-labelledby="page-friends-title" hidden>
+          <h2 id="page-friends-title">Freunde</h2><div id="friends-page-content"></div>
+        </section>
+        <section id="page-profile" class="launcher-page secondary-page" aria-labelledby="page-profile-title" hidden>
+          <h2 id="page-profile-title">Spielerprofil</h2><div id="profile-page-content"></div>
+        </section>
+        <section id="page-statistics" class="launcher-page secondary-page" aria-labelledby="page-statistics-title" hidden>
+          <h2 id="page-statistics-title">Statistik</h2><div id="statistics-page-content"></div>
+        </section>
+        <section id="page-settings" class="launcher-page secondary-page" aria-labelledby="page-settings-title" hidden>
+          <h2 id="page-settings-title">Einstellungen</h2><div id="settings-page-content"></div>
+        </section>
+        <section id="page-news" class="launcher-page secondary-page" aria-labelledby="page-news-title" hidden>
+          <h2 id="page-news-title">Neuigkeiten</h2><div id="news-page-content"></div>
+        </section>
+      </main>
+
+      <!-- 5. Rechte Spalte: Rahmen / Karte / Überschriften sind bereits im PNG. -->
+      <aside id="sidebar-right" aria-label="Spielerinformationen">
+        <section id="widget-player-profile" class="sidebar-widget" aria-labelledby="player-widget-title">
+          <h2 id="player-widget-title" class="sr-only">Spielerprofil</h2>
+          <div id="player-profile-content">
+            <div id="player-avatar-container" hidden><img id="player-avatar" alt="Spielerskin"></div>
+            <div id="player-details">
+              <h3 id="player-name">Nicht verbunden</h3>
+              <p>Rang: <span id="player-rank">—</span></p>
+              <p>Level: <span id="player-level">0</span></p>
+              <progress id="player-xp-bar" max="100" value="0">0 %</progress>
+              <span id="player-xp-text">0 / 100 XP</span>
+            </div>
+          </div>
+          <div id="player-statistics">
+            <div id="stat-playtime">Spielzeit: <strong id="player-playtime">—</strong></div>
+            <div id="stat-kills">Kills: <strong id="player-kills">—</strong></div>
+            <div id="stat-blocks-placed">Platziert: <strong id="player-blocks-placed">—</strong></div>
+            <div id="stat-blocks-mined">Abgebaut: <strong id="player-blocks-mined">—</strong></div>
+          </div>
+        </section>
+
+        <section id="widget-quests" class="sidebar-widget" aria-labelledby="quest-widget-title">
+          <h2 id="quest-widget-title" class="sr-only">Quests</h2>
+          <div id="quest-tabs">
+            <button id="btn-daily-quests" type="button" class="quest-tab active" aria-pressed="true">Täglich</button>
+            <button id="btn-weekly-quests" type="button" class="quest-tab" aria-pressed="false">Wöchentlich</button>
+          </div>
+          <div id="quest-list">
+            <div id="quest-item-1" class="quest-item"><span id="quest-name-1">Sammle 128 Holz</span><progress id="quest-progress-1" max="128" value="0">0 / 128</progress><span id="quest-count-1">0/128</span></div>
+            <div id="quest-item-2" class="quest-item"><span id="quest-name-2">Baue 10 Cobblestone-Blöcke</span><progress id="quest-progress-2" max="10" value="0">0 / 10</progress><span id="quest-count-2">0/10</span></div>
+            <div id="quest-item-3" class="quest-item"><span id="quest-name-3">Besiege 5 Monster</span><progress id="quest-progress-3" max="5" value="0">0 / 5</progress><span id="quest-count-3">0/5</span></div>
+          </div>
+          <p id="quest-status" class="sr-only" role="status" aria-live="polite">Beispielquests ohne Serververbindung</p>
+        </section>
+
+        <section id="widget-worldmap" class="sidebar-widget" aria-labelledby="worldmap-widget-title">
+          <h2 id="worldmap-widget-title" class="sr-only">Weltkarte</h2>
+          <div id="minimap-container">
+            <!-- Die Karte ist schon in template-bg.png eingebettet. -->
+            <button id="btn-expand-map" type="button" class="image-button"
+                    title="Weltkarte öffnen" aria-label="Weltkarte öffnen"><span class="sr-only">Weltkarte öffnen</span></button>
+          </div>
+          <span id="map-status" class="sr-only">Kartenvorschau</span>
+        </section>
+
+        <section id="widget-friends" class="sidebar-widget" aria-labelledby="friends-widget-title">
+          <h2 id="friends-widget-title" class="sr-only">Freunde</h2>
+          <span id="friends-online-count" class="friends-count">— online</span>
+          <ul id="friends-list" aria-label="Freundesliste"></ul>
+          <p id="friends-status" role="status" aria-live="polite">Noch keine Serververbindung</p>
+          <button id="btn-show-all-friends" type="button" class="card-text-button">Alle Freunde</button>
+        </section>
+      </aside>
+    </div>
+
+    <!-- Statusmeldungen sind vorhanden, ohne zusätzliche feste UI-Flächen. -->
+    <footer id="launcher-footer" class="sr-only">
+      <span id="server-status">Serverstatus: Noch nicht verbunden</span>
+      <span id="server-player-count">Spieler online: —</span>
+      <span id="launcher-footer-version">La Familia Launcher</span>
+    </footer>
+    <div id="notification-container" role="status" aria-live="polite"></div>
+    <div id="loading-overlay" role="status" aria-live="polite" hidden>
+      <div id="loading-spinner" aria-hidden="true">⚙</div>
+      <p id="loading-title">La Familia wird vorbereitet …</p>
+      <p id="loading-message">Bitte einen Moment …</p>
+      <progress id="loading-progress" max="100" value="0">0 %</progress>
+    </div>
+    </div><!-- #launcher-overlay -->
+  </div><!-- #launcher-app -->
+  <!-- SVG-Texte werden direkt in Fensterauflösung gerendert (nicht als Pixel im Bild). -->
+  <svg id="crisp-labels" viewBox="0 0 1280 720" preserveAspectRatio="none"
+       xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <linearGradient id="vector-title-gold" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#fff7bb"/>
+        <stop offset="22%" stop-color="#fffbd8"/>
+        <stop offset="43%" stop-color="#fbd55b"/>
+        <stop offset="64%" stop-color="#e79b25"/>
+        <stop offset="79%" stop-color="#ffd45b"/>
+        <stop offset="100%" stop-color="#824011"/>
+      </linearGradient>
+      <filter id="vector-title-shadow" x="-20%" y="-30%" width="140%" height="170%">
+        <feDropShadow dx="1.4" dy="2.6" stdDeviation="1.1" flood-color="#090300" flood-opacity="1"/>
+      </filter>
+    </defs>
+    <!-- Native SVG title, separate from the photograph: scalable with the window. -->
+    <g id="crisp-main-title" aria-label="La Familia Launcher">
+      <image id="vector-title-line-1" href="assets/title-la-familia-original.png" x="520" y="45" width="240" height="49"/>
+      <image id="vector-title-line-2" href="assets/title-launcher-original.png" x="544" y="80" width="192" height="52"/>
+    </g>
+    <g id="crisp-nav-labels" class="crisp-nav-text">
+      <text id="label-nav-home" x="80" y="170">Startseite</text>
+      <text id="label-nav-mods" x="80" y="206">Mods</text>
+      <text id="label-nav-quests" x="80" y="242">Quests</text>
+      <text id="label-nav-worldmap" x="80" y="278">Weltkarte</text>
+      <text id="label-nav-friends" x="80" y="314">Freunde</text>
+      <text id="label-nav-profile" x="80" y="350">Profil</text>
+      <text id="label-nav-statistics" x="80" y="386">Statistik</text>
+      <text id="label-nav-settings" x="80" y="422">Einstellungen</text>
+      <text id="label-nav-news" x="80" y="458">News</text>
+      <text id="label-nav-discord" x="80" y="494">Discord</text>
+    </g>
+  </svg>
+</body>
+</html>
