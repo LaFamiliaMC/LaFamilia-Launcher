@@ -182,3 +182,12 @@ test('Ungültiger manueller Name wird abgewiesen bevor eine HTTP-Anfrage erfolgt
   assert.equal(result.code,'invalid_name');
   assert.equal(called,false);
 });
+
+test('Mojang HTTP 406: JSON-Antworten und PNG-Bilder erhalten korrekte Accept-Header',()=>{
+  const {mojangAcceptHeader}=require('../player-profile');
+  assert.equal(mojangAcceptHeader('sessionserver.mojang.com'),'application/json');
+  assert.equal(mojangAcceptHeader('api.minecraftservices.com'),'application/json');
+  assert.equal(mojangAcceptHeader('textures.minecraft.net'),'image/png');
+  assert.equal(mojangAcceptHeader('evil.example'),null);
+  assert.notEqual(mojangAcceptHeader('sessionserver.mojang.com'),'application/octet-stream');
+});
