@@ -79,6 +79,11 @@ async function readActiveAccount({minecraftRoot,localAppData=process.env.LOCALAP
   }
   return null;
 }
+function mojangAcceptHeader(hostname){
+  if(hostname==='sessionserver.mojang.com'||hostname==='api.minecraftservices.com')return 'application/json';
+  if(hostname==='textures.minecraft.net')return 'image/png';
+  return null;
+}
 function requestBytes(url,{timeoutMs=10000,maxBytes=512*1024}={}){
   const parsed=new URL(url);
   const session=parsed.hostname==='sessionserver.mojang.com'&&
@@ -90,7 +95,7 @@ function requestBytes(url,{timeoutMs=10000,maxBytes=512*1024}={}){
   if(parsed.protocol!=='https:'||parsed.port||parsed.username||parsed.password||parsed.hash||
      (!session&&!texture&&!lookup)||parsed.search)throw Error('Unzulässige Profiladresse.');
   return new Promise((resolve,reject)=>{
-    const req=https.get(parsed,{headers:{'User-Agent':'LaFamilia-Launcher/Profile','Accept':'application/octet-stream'}},res=>{
+    const req=https.get(parsed,{headers:{'User-Agent':'LaFamilia-Launcher/Profile','Accept':mojangAcceptHeader(parsed.hostname)}},res=>{
       if(res.statusCode!==200){res.resume();reject(Error('Mojang HTTP '+res.statusCode));return;}
       const buffers=[];let size=0;
       res.on('data',chunk=>{
@@ -234,5 +239,5 @@ function createPlayerProfileController({minecraftRoot,localAppData,choiceFile,re
   return {get:()=>refresh(false),refresh:()=>refresh(true),chooseName};
 }
 module.exports={normalizeUuid,publicIdentity,accountFromModern,accountFromLegacy,
-  readActiveAccount,requestBytes,trustedTextureUrl,decodeTextures,pngDataUrl,
+  readActiveAccount,requestBytes,mojangAcceptHeader,trustedTextureUrl,decodeTextures,pngDataUrl,
   parsePublicPlayer,lookupPublicPlayer,readSavedChoice,saveChoice,createPlayerProfileController};
