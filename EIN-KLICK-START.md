@@ -10,4 +10,4 @@ Danach richtet der Launcher ausschließlich **Minecraft 1.21.1 + Fabric Loader 0
 
 **Grenze:** Microsoft-Anmeldung und der tatsächliche Spielstart erfolgen weiter im offiziellen Minecraft Launcher. Dort muss der Spieler ggf. die Installation **La Familia – Piraten Update** auswählen und anschließend **Spielen** klicken.
 
-Der Windows-Build wird als GitHub Actions **Artifact** erstellt. Es findet **keine Veröffentlichung** als Release und kein automatisches Update bei Spielern statt. Die automatisierten Tests prüfen den Ablauf und Fehlerszenarien; zusätzlich ist der Test auf einem Windows-Spieler-PC erforderlich.
+Der Windows-Build wird als GitHub Actions **Artifact** erstellt. Nach erfolgreichen Tests wird die Windows-EXE jetzt **automatisch als GitHub-Release-Update veröffentlicht** (Details in `AUTO-UPDATE-TESTBUILDS.md`). Die automatisierten Tests prüfen den Ablauf und Fehlerszenarien; zusätzlich ist der Test auf einem Windows-Spieler-PC erforderlich.
