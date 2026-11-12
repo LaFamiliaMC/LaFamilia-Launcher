@@ -37,5 +37,12 @@ jobs:
       - name: Probe real HTTPS requests from the Launcher (without installing mods)
         run: |
           node -e "require('./modpack-net').getLatestManifest().then(r => { console.log('HTTPS test: '+r.manifest.mods.length+' Mods, '+r.manifest.resourcepacks.files.length+' Resourcepacks, '+r.manifest.config.files.length+' Configs, Version '+r.manifest.version); if(r.manifest.mods.length!==301)process.exitCode=1; }).catch(e => { console.error(e); process.exitCode=1; })"
+      - name: Download real config and resourcepack archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download modpack-v1.0.0 --repo LaFamiliaMC/LaFamilia-Modpack --pattern config.zip --pattern resourcepacks.zip --dir .modpack-smoke
+      - name: Verify actual config and resourcepack ZIP contents
+        run: node scripts/verify-public-modpack-archives.cjs .modpack-smoke/manifest.json .modpack-smoke/release.json .modpack-smoke
       - name: Run unit tests
         run: npm test
