@@ -80,10 +80,11 @@ async function isRegularJavaFile(file){
 // Minecraft liefert auf Windows normalerweise eine eigene Java-Laufzeit mit.
 // Nur wenn keine lokale Laufzeit auffindbar ist, wird Java aus PATH verwendet.
 async function findJavaExecutable(minecraftRoot,{env=process.env,exists=isRegularJavaFile}={}){
-  const storeRoot=env.LOCALAPPDATA
-    ? path.join(env.LOCALAPPDATA,'Packages','Microsoft.4297127D64EC6_8wekyb3d8bbwe','LocalCache','Local','minecraft')
+  const storeBase=env.LOCALAPPDATA
+    ? path.join(env.LOCALAPPDATA,'Packages','Microsoft.4297127D64EC6_8wekyb3d8bbwe','LocalCache','Local')
     : null;
-  const roots=[minecraftRoot,storeRoot,
+  // Die Store-Ausgabe kann ihre Java-Runtime sowohl in Local als auch in Local/minecraft ablegen.
+  const roots=[minecraftRoot,storeBase,storeBase?path.join(storeBase,'minecraft'):null,
     env['ProgramFiles(x86)']?path.join(env['ProgramFiles(x86)'],'Minecraft Launcher'):null,
     env.ProgramFiles?path.join(env.ProgramFiles,'Minecraft Launcher'):null].filter(Boolean);
   const arches=process.arch==='arm64'?['windows-arm64','windows-x64']

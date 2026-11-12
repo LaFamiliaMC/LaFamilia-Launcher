@@ -44,6 +44,15 @@ test('Minecrafts gebündeltes Java hat Vorrang vor JAVA_HOME und PATH',async t=>
   if(process.arch==='arm64'||process.arch==='ia32')return;
   assert.equal(await m.findJavaExecutable(root,{env:{JAVA_HOME:path.join(root,'andere-java')}}),java);
 });
+test('Java aus dem Microsoft-Store-Launcher wird automatisch gefunden',async t=>{
+  if(process.arch==='arm64'||process.arch==='ia32')return;
+  const root=await tmp(t);
+  const local=path.join(root,'Packages','Microsoft.4297127D64EC6_8wekyb3d8bbwe','LocalCache','Local');
+  const java=path.join(local,'runtime','java-runtime-delta','windows-x64','java-runtime-delta','bin','java.exe');
+  await fs.mkdir(path.dirname(java),{recursive:true});
+  await fs.writeFile(java,'test');
+  assert.equal(await m.findJavaExecutable(path.join(root,'fehlendes-minecraft'),{env:{LOCALAPPDATA:root}}),java);
+});
 test('JAVA_HOME wird genutzt, falls Minecraft-Java noch fehlt',async t=>{
   const root=await tmp(t),home=path.join(root,'jdk');
   const java=path.join(home,'bin','java.exe');
