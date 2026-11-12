@@ -220,7 +220,10 @@ function createPlayerProfileController({minecraftRoot,localAppData,choiceFile,re
       const result=await load(true,identity);
       if(result.ok){
         selectedManual=identity;
-        await saveChoice(choiceFile,identity);
+        try{await saveChoice(choiceFile,identity);}
+        catch(error){
+          return {...result,message:'Skin geladen, aber die Auswahl konnte nicht dauerhaft gespeichert werden: '+error.message};
+        }
       }
       return result;
     }catch(error){
