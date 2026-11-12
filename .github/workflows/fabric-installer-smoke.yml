@@ -1,0 +1,23 @@
+name: Fabric-Installer-Automatik Windows Smoke
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'fabric-auto-install.js'
+      - 'tests/fabric-auto-install.test.cjs'
+      - 'scripts/verify-fabric-cli.cjs'
+      - '.github/workflows/fabric-installer-smoke.yml'
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fabric unit tests
+        run: node --test tests/fabric-auto-install.test.cjs
+      - name: Official Fabric Windows EXE checksum and CLI test
+        run: node scripts/verify-fabric-cli.cjs

@@ -27,6 +27,14 @@ contextBridge.exposeInMainWorld('laFamilia', {
   prepareMinecraftProfile: () => ipcRenderer.invoke('game:prepare-profile'),
   launchMinecraftOfficial: () => ipcRenderer.invoke('game:launch-official'),
   openFabricInstallerPage: () => ipcRenderer.invoke('game:open-fabric-installer-page'),
+  installFabricAutomatically: () => ipcRenderer.invoke('fabric:install'),
+  getFabricInstallStatus: () => ipcRenderer.invoke('fabric:get-state'),
+  onFabricInstallStatusChange: callback => {
+    if (typeof callback !== 'function') return () => {};
+    const listener = (_event,status) => callback(status);
+    ipcRenderer.on('fabric:state',listener);
+    return () => ipcRenderer.removeListener('fabric:state',listener);
+  },
   getMetricsUrl: () => ipcRenderer.invoke('server:get-metrics-url'),
   saveMetricsUrl: url => ipcRenderer.invoke('server:save-metrics-url',url),
   getServerStatus: () => ipcRenderer.invoke('server:get-status'),

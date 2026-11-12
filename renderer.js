@@ -112,19 +112,29 @@ document.addEventListener('DOMContentLoaded', () => {
   byId('btn-discord')?.addEventListener('click', () => {
     notify('Der Discord-Link wird später in der Konfiguration hinterlegt.');
   });
+  if(api?.onFabricInstallStatusChange){
+    api.onFabricInstallStatusChange(state=>{
+      const text=state?.message||'';
+      if(!text)return;
+      const settings=document.getElementById('minecraft-profile-status');
+      if(settings)settings.textContent=text;
+      const playStatus=document.getElementById('play-status');
+      if(playStatus&&['checking','installing','error'].includes(state.phase))playStatus.textContent=text;
+    });
+  }
   byId('btn-play')?.addEventListener('click', async () => {
     const button=byId('btn-play');
     if(button.disabled)return;
     if(!api?.launchMinecraftOfficial){notify('Spielstart ist nur in der installierten Windows-Version verfügbar.');return;}
     button.disabled=true;
     byId('play-status').textContent='Modpack und Minecraft-Installation werden geprüft …';
-    notify('Prüfe Modpack, Fabric und Minecraft-Profil …');
+    notify('Prüfe Modpack und Fabric; fehlender Fabric Loader wird automatisch installiert …');
     try{
       const result=await api.launchMinecraftOfficial();
       const message=result.message||'Der offizielle Minecraft Launcher konnte nicht gestartet werden.';
       byId('play-status').textContent=message;
       notify(message);
-      if(!result.ok&&['missing_fabric','no_launcher_profiles','modpack_missing','mods_empty'].includes(result.code)){
+      if(!result.ok&&['missing_fabric','install_failed','launcher_running','no_launcher_profiles','modpack_missing','mods_empty'].includes(result.code)){
         if(result.code==='modpack_missing'||result.code==='mods_empty')switchPage('mods');
         else switchPage('settings');
       }
@@ -199,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <p id="system-memory">Gesamter RAM: wird ermittelt …</p>
           <button type="button" id="btn-open-game-folder" class="feature-button">Spielordner öffnen</button>
           <button type="button" id="btn-prepare-minecraft-profile" class="feature-button">Fabric-Profil einrichten</button>
-          <button type="button" id="btn-open-fabric-installer" class="feature-button">Fabric Installer (offizielle Seite)</button>
+          <button type="button" id="btn-open-fabric-installer" class="feature-button">Fabric 1.21.1 automatisch installieren</button>
           <p id="minecraft-profile-status" role="status" aria-live="polite"></p>
           <button type="button" id="btn-toggle-fullscreen" class="feature-button" title="Auch mit F11 umschaltbar">Vollbild einschalten (F11)</button>
           <button type="button" id="btn-server-settings" class="feature-button">Serverstatus &amp; Adresse</button>
@@ -251,9 +261,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }catch(error){status.textContent='Profilfehler: '+error.message;notify(status.textContent);}
     });
     byId('btn-open-fabric-installer').addEventListener('click',async()=>{
-      if(!api?.openFabricInstallerPage){notify('Fabric Installer: https://fabricmc.net/use/installer/');return;}
-      try{await api.openFabricInstallerPage();}
-      catch(error){notify('Fabric-Seite konnte nicht geöffnet werden: '+error.message);}
+      if(!api?.installFabricAutomatically){notify('Fabric-Installation funktioniert nur in der Windows-Testversion.');return;}
+      const status=byId('minecraft-profile-status');
+      const button=byId('btn-open-fabric-installer');
+      button.disabled=true;
+      status.textContent='Fabric Loader 1.21.1 wird geprüft …';
+      try{
+        const result=await api.installFabricAutomatically();
+        status.textContent=result.ok?'Fabric Loader 1.21.1 ist eingerichtet ('+result.versionId+').':result.message;
+        notify(status.textContent);
+      }catch(error){status.textContent='Fabric-Installation fehlgeschlagen: '+error.message;notify(status.textContent);}
+      finally{button.disabled=false;}
     });
     byId('btn-toggle-fullscreen').addEventListener('click', () => void runWindowCommand('toggleFullscreen'));
     byId('btn-check-launcher-updates').addEventListener('click', async () => {

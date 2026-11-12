@@ -12,6 +12,7 @@ const { queryServerMetrics, validateMetricsUrl } = require('./server-metrics');
 const { createNewsController } = require('./news-feed');
 const { createModpackManager } = require('./modpack-manager');
 const { prepareProfile, openOfficialLauncher, FABRIC_HELP_URL } = require('./minecraft-launch');
+const { ensureFabric } = require('./fabric-auto-install');
 
 const firstInstance = app.requestSingleInstanceLock();
 if(!firstInstance) app.quit();
@@ -27,9 +28,39 @@ let serverRefreshInterval;
 let newsRefreshInterval;
 let newsController;
 let modpackManager;
+let fabricInstallPromise=null;
+let fabricStatus={phase:'idle',message:'Fabric Loader wird bei Bedarf automatisch installiert.'};
 let serverCheckPromise;
 let serverSnapshot = {phase:'checking',online:false,address:'23.88.65.87:25565',playersOnline:null,playersMax:null,pingMs:null,version:null,checkedAt:null,error:null,tps:null,uptimeSeconds:null,telemetryAvailable:false,telemetryError:null};
 
+function setFabricStatus(phase,message){
+  fabricStatus={phase,message};
+  if(mainWindow&&!mainWindow.isDestroyed()&&!mainWindow.webContents.isDestroyed()){
+    mainWindow.webContents.send('fabric:state',{...fabricStatus});
+  }
+  return {...fabricStatus};
+}
+function installFabricIfNeeded(){
+  if(fabricInstallPromise)return fabricInstallPromise;
+  fabricInstallPromise=(async()=>{
+    setFabricStatus('checking','Prüfe Fabric Loader 1.21.1 …');
+    try{
+      const result=await ensureFabric({
+        minecraftRoot:path.join(app.getPath('appData'),'.minecraft'),
+        userData:app.getPath('userData'),
+        update:message=>setFabricStatus('installing',message)
+      });
+      setFabricStatus(result.ok?'ready':'action-needed',
+        result.ok?(result.code==='installed'?'Fabric Loader 1.21.1 installiert.':'Fabric Loader 1.21.1 ist bereits vorhanden.'):result.message);
+      return result;
+    }catch(error){
+      const message='Fabric-Installation fehlgeschlagen: '+error.message;
+      setFabricStatus('error',message);
+      return {ok:false,code:'install_failed',message};
+    }
+  })().finally(()=>{fabricInstallPromise=null;});
+  return fabricInstallPromise;
+}
 function getGameDirectory() {
   return path.join(app.getPath('appData'), '.minecraft', 'la-familia');
 }
@@ -391,8 +422,12 @@ if(firstInstance)app.whenReady().then(() => {
     return readInstalledMods();
   });
 
+  ipcMain.handle('fabric:get-state', event=>{getTrustedWindow(event);return {...fabricStatus};});
+  ipcMain.handle('fabric:install', async event=>{getTrustedWindow(event);return installFabricIfNeeded();});
   ipcMain.handle('game:prepare-profile', async(event) => {
     getTrustedWindow(event);
+    const fabric=await installFabricIfNeeded();
+    if(!fabric.ok)return fabric;
     const ram=await readSettings();
     return prepareProfile({
       minecraftRoot:path.join(app.getPath('appData'),'.minecraft'),
@@ -414,6 +449,8 @@ if(firstInstance)app.whenReady().then(() => {
     };
     const local=await readInstalledMods();
     if(local.mods.length===0)return {ok:false,code:'mods_empty',message:'Im La-Familia-Spielordner sind keine Mods vorhanden.'};
+    const fabric=await installFabricIfNeeded();
+    if(!fabric.ok)return fabric;
     const ram=await readSettings();
     const profile=await prepareProfile({
       minecraftRoot:path.join(app.getPath('appData'),'.minecraft'),
