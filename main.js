@@ -15,6 +15,7 @@ const { prepareProfile, openOfficialLauncher, FABRIC_HELP_URL } = require('./min
 const { ensureFabric } = require('./fabric-auto-install');
 const { createGameStartController } = require('./game-start');
 const { launcherProcessRunning } = require('./minecraft-launch');
+const { createPlayerProfileController } = require('./player-profile');
 
 const firstInstance = app.requestSingleInstanceLock();
 if(!firstInstance) app.quit();
@@ -31,6 +32,7 @@ let newsRefreshInterval;
 let newsController;
 let modpackManager;
 let gameStartController;
+let playerProfileController;
 let fabricInstallPromise=null;
 let fabricStatus={phase:'idle',message:'Fabric Loader wird bei Bedarf automatisch installiert.'};
 let serverCheckPromise;
@@ -325,6 +327,10 @@ if(firstInstance)app.whenReady().then(() => {
     userData:app.getPath('userData'),
     getWindow:()=>mainWindow
   });
+  playerProfileController=createPlayerProfileController({
+    minecraftRoot:path.join(app.getPath('appData'),'.minecraft'),
+    localAppData:process.env.LOCALAPPDATA
+  });
   gameStartController=createGameStartController({
     modpackManager,readInstalledMods,installFabricIfNeeded,readSettings,
     prepareProfile:ramGb=>prepareProfile({
@@ -454,6 +460,14 @@ if(firstInstance)app.whenReady().then(() => {
     getTrustedWindow(event);
     await shell.openExternal(FABRIC_HELP_URL);
     return {ok:true};
+  });
+  ipcMain.handle('player:get-profile',async event=>{
+    getTrustedWindow(event);
+    return playerProfileController.get();
+  });
+  ipcMain.handle('player:refresh-profile',async event=>{
+    getTrustedWindow(event);
+    return playerProfileController.refresh();
   });
   ipcMain.handle('game:get-start-state',event=>{getTrustedWindow(event);return gameStartController.getState();});
   ipcMain.handle('game:launch-official',async event=>{getTrustedWindow(event);return gameStartController.start();});
