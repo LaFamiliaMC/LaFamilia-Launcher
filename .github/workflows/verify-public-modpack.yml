@@ -34,5 +34,8 @@ jobs:
         run: gh api repos/LaFamiliaMC/LaFamilia-Modpack/releases/tags/modpack-v1.0.0 > .modpack-smoke/release.json
       - name: Check real manifest against launcher V1.3.5 parser
         run: node scripts/verify-public-modpack.cjs .modpack-smoke/manifest.json .modpack-smoke/release.json
+      - name: Probe real HTTPS requests from the Launcher (without installing mods)
+        run: |
+          node -e "require('./modpack-net').getLatestManifest().then(r => { console.log('HTTPS test: '+r.manifest.mods.length+' Mods, '+r.manifest.resourcepacks.files.length+' Resourcepacks, '+r.manifest.config.files.length+' Configs, Version '+r.manifest.version); if(r.manifest.mods.length!==301)process.exitCode=1; }).catch(e => { console.error(e); process.exitCode=1; })"
       - name: Run unit tests
         run: npm test
