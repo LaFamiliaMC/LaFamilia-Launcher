@@ -9,9 +9,11 @@ on:
       - 'assets/news/**'
       - 'NEWS-ANLEITUNG.md'
 
+# Nur der neueste Commit benötigt einen Windows-Installer: ältere
+# wartende/noch laufende Builds nicht die GitHub-Runner-Queue blockieren lassen.
 concurrency:
   group: la-familia-windows-updates
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: write
