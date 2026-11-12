@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "lafamilia_servermetrics",
+  "version": "1.0.0",
+  "name": "La Familia Server Metrics",
+  "description": "Sendet echte TPS und Laufzeit an den La Familia Launcher.",
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "de.lafamilia.metrics.LaFamiliaServerMetrics"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "fabric-api": "*",
+    "minecraft": "1.21.1",
+    "java": ">=21"
+  }
+}
