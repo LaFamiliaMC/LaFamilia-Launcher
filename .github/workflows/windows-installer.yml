@@ -20,7 +20,8 @@ permissions:
 
 jobs:
   windows-installer:
-    runs-on: windows-latest
+    # Stabile, gesonderte Windows-Runner-Umgebung statt der latest-Warteschlange.
+    runs-on: windows-2022
     env:
       LA_FAMILIA_UPDATES_OWNER: ${{ vars.LA_FAMILIA_UPDATES_OWNER || github.repository_owner }}
       LA_FAMILIA_UPDATES_REPO: ${{ vars.LA_FAMILIA_UPDATES_REPO || github.event.repository.name }}
