@@ -116,7 +116,7 @@ async function prepareProfile({minecraftRoot,gameDir,ramGb,processRunning=launch
   const backup=file+'.lafamilia-backup-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';
   const tmp=file+'.lafamilia-'+process.pid+'.tmp';
   try{
-    await fs.copyFile(file,backup,{flag:'wx'});
+    await fs.copyFile(file,backup,require('node:fs').constants.COPYFILE_EXCL);
     await fs.writeFile(tmp,JSON.stringify(data,null,2)+'\n',{encoding:'utf8',flag:'wx'});
     if(await processRunning()){
       await fs.rm(tmp,{force:true});
