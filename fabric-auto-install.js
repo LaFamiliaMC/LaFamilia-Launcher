@@ -65,6 +65,8 @@ async function obtainInstaller(cacheDir,{fetchFile=downloadBuffer,update=()=>{}}
   const partial=path.join(cacheDir,FILENAME+'.'+process.pid+'.tmp');
   try{
     await fs.writeFile(partial,data,{flag:'wx'});
+    // Unter Windows lässt sich eine bereits vorhandene, beschädigte EXE nicht zuverlässig per rename ersetzen.
+    await fs.rm(exe,{force:true});
     await fs.rename(partial,exe);
   }catch(error){await fs.rm(partial,{force:true}).catch(()=>{});throw error;}
   return exe;
