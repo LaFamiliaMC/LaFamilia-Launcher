@@ -18,7 +18,7 @@ module.exports = {
   directories: { output: 'dist', buildResources: 'build' },
   files: [
     'main.js', 'preload.js', 'renderer.js', 'updater.js', 'server-status.js', 'server-ui.js', 'server-status.css', 'config/**/*',
-    'index.html', 'style.css', 'server-panel.css', 'server-panel.js', 'server-metrics.js', 'news-feed.js', 'news-ui.js', 'news-ui.css', 'modpack-core.js', 'modpack-net.js', 'modpack-zip.js', 'modpack-manager.js', 'modpack-ui.js', 'modpack-ui.css', 'minecraft-launch.js', 'fabric-auto-install.js', 'game-start.js', 'package.json', 'assets/**/*'
+    'index.html', 'style.css', 'server-panel.css', 'server-panel.js', 'server-metrics.js', 'news-feed.js', 'news-ui.js', 'news-ui.css', 'modpack-core.js', 'modpack-net.js', 'modpack-zip.js', 'modpack-manager.js', 'modpack-ui.js', 'modpack-ui.css', 'minecraft-launch.js', 'fabric-auto-install.js', 'game-start.js', 'player-profile.js', 'player-profile-ui.js', 'player-profile.css', 'node_modules/skinview3d/bundles/skinview3d.bundle.min.js', 'package.json', 'assets/**/*'
   ],
   win: {
     target: [{ target: 'nsis', arch: ['x64'] }],
