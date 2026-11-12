@@ -8,6 +8,11 @@ document.addEventListener('DOMContentLoaded',()=>{
     const id=event.target?.id;
     if(id==='btn-server-details'||id==='btn-server-settings')navigate();
   });
+  function formatUptime(value){
+    if(!Number.isFinite(value)||value<0)return '—';
+    const d=Math.floor(value/86400),h=Math.floor((value%86400)/3600),m=Math.floor((value%3600)/60);
+    return d?d+' Tage '+h+' Std.':h?h+' Std. '+m+' Min.':m+' Min.';
+  }
   function update(data){
     if(!data||typeof data!=='object')return;
     const online=data.phase==='online';
@@ -29,6 +34,9 @@ document.addEventListener('DOMContentLoaded',()=>{
     put('server-detail-players',players);
     put('server-detail-ping',ping);
     put('server-detail-version',version);
+    put('server-detail-tps',online&&Number.isFinite(data.tps)?data.tps.toFixed(1):'—');
+    put('server-detail-uptime',online?formatUptime(data.uptimeSeconds):'—');
+    put('server-metrics-status',data.telemetryAvailable?'✓ Live-TPS/Laufzeit verbunden':(data.telemetryError||'TPS/Laufzeit: Server-Erweiterung nicht verbunden'));
     put('server-error',data.phase==='offline'?String(data.error||'Server antwortet nicht.'):'');
     if(data.checkedAt){
       const time=new Date(data.checkedAt);
@@ -47,6 +55,16 @@ document.addEventListener('DOMContentLoaded',()=>{
       update(await api.getServerStatus());
     }catch(error){put('server-save-feedback','Fehler: '+error.message);}
   });
+  element('btn-metrics-save')?.addEventListener('click',async()=>{
+    if(!api?.saveMetricsUrl)return;
+    try{
+      await api.saveMetricsUrl(element('server-metrics-input')?.value||'');
+      put('server-metrics-status','Metrik-Adresse gespeichert.');
+    }catch(error){put('server-metrics-status','Fehler: '+error.message);}
+  });
+  if(api?.getMetricsUrl){api.getMetricsUrl().then(data=>{
+    if(element('server-metrics-input'))element('server-metrics-input').value=data.url||'';
+  }).catch(()=>{});}
   if(api?.getServerAddress){
     api.getServerAddress().then(data=>{
       if(element('server-address-input'))element('server-address-input').value=data.address||'';

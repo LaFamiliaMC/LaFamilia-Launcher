@@ -10,6 +10,8 @@
   <link rel="stylesheet" href="style.css">
   <script src="renderer.js" defer></script>
   <script src="server-ui.js" defer></script>
+  <script src="server-panel.js" defer></script>
+  <link rel="stylesheet" href="server-panel.css">
   <link rel="stylesheet" href="server-status.css">
 </head>
 <body>
@@ -24,7 +26,7 @@
     <header id="titlebar" aria-label="Fenstersteuerung">
       <div id="titlebar-drag-region">
         <span id="window-title" class="sr-only">La Familia Launcher</span>
-        <span id="launcher-version" class="sr-only">Version 1.3.2</span>
+        <span id="launcher-version" class="sr-only">Version 1.3.3</span>
       </div>
       <div id="window-controls">
         <button id="btn-minimize" type="button" class="image-button"
@@ -64,7 +66,7 @@
         </nav>
         <div id="sidebar-footer" class="sr-only">
           <span id="sidebar-connection-status">Serverstatus noch nicht angebunden</span>
-          <span id="sidebar-version">La Familia v1.3.2</span>
+          <span id="sidebar-version">La Familia v1.3.3</span>
         </div>
       </aside>
 
@@ -177,6 +179,9 @@
                 <p><strong>Spieler:</strong> <span id="server-detail-players">—</span></p>
                 <p><strong>Ping:</strong> <span id="server-detail-ping">—</span></p>
                 <p><strong>Minecraft-Version:</strong> <span id="server-detail-version">—</span></p>
+                <p><strong>Modpack:</strong> La Familia</p>
+                <p><strong>Laufzeit:</strong> <span id="server-detail-uptime">—</span></p>
+                <p><strong>TPS:</strong> <span id="server-detail-tps">—</span></p>
                 <p><strong>Letzte Abfrage:</strong> <span id="server-last-check">—</span></p>
                 <p id="server-error" class="server-error" role="status"></p>
                 <button type="button" class="feature-button" id="btn-server-refresh">Jetzt aktualisieren</button>
@@ -188,6 +193,10 @@
                 <input type="text" id="server-address-input" maxlength="300" placeholder="23.88.65.87:25565" autocomplete="off" spellcheck="false">
                 <p class="server-help">Aktuell: <span id="server-detail-address">—</span></p>
                 <button type="button" class="feature-button" id="btn-server-save">Adresse speichern</button>
+                <label for="server-metrics-input">TPS/Laufzeit-Schnittstelle</label>
+                <input type="text" id="server-metrics-input" maxlength="500" placeholder="http://23.88.65.87:25566/status" autocomplete="off" spellcheck="false">
+                <button type="button" class="feature-button" id="btn-metrics-save">Metrik-Adresse speichern</button>
+                <p id="server-metrics-status" role="status">TPS/Laufzeit benötigen eine Server-Erweiterung.</p>
                 <p id="server-save-feedback" role="status"></p>
               </section>
             </div>
@@ -244,18 +253,25 @@
           <span id="map-status" class="sr-only">Kartenvorschau</span>
         </section>
 
-        <section id="widget-friends" class="sidebar-widget" aria-labelledby="friends-widget-title">
-          <h2 id="friends-widget-title" class="sr-only">Freunde</h2>
-          <span id="friends-online-count" class="friends-count">— online</span>
-          <ul id="friends-list" aria-label="Freundesliste"></ul>
-          <p id="friends-status" role="status" aria-live="polite">Serverstatus wird geprüft …</p>
-          <div id="server-home-details" aria-label="Minecraft-Serverstatus">
-            <span id="server-home-players">Spieler: —</span>
-            <span id="server-home-ping">Ping: —</span>
-            <span id="server-home-version">Version: —</span>
-            <button id="btn-server-details" type="button" class="server-inline-action">Serverdetails</button>
+        <section id="widget-friends" class="sidebar-widget" aria-label="Server Status">
+          <h2 id="friends-widget-title" class="sr-only">Server Status</h2>
+          <div id="lf-server-panel" aria-label="Aktueller Minecraft-Serverstatus">
+            <div class="lf-server-title"><span aria-hidden="true" class="lf-server-title-icon">▤</span><span>Server Status</span></div>
+            <div class="lf-server-overview">
+              <span class="lf-server-led" id="lf-server-led" aria-hidden="true"></span>
+              <strong id="lf-server-state" role="status" aria-live="polite">Prüfe …</strong>
+              <span class="lf-server-player-summary"><span aria-hidden="true">♟</span> <strong id="lf-server-player-summary">— / —</strong></span>
+            </div>
+            <div class="lf-server-stats" aria-label="Serverdaten">
+              <div class="lf-server-stat"><span>Spieler:</span><strong id="lf-server-players">—</strong></div>
+              <div class="lf-server-stat"><span>Version:</span><strong id="lf-server-version">—</strong></div>
+              <div class="lf-server-stat"><span>Modpack:</span><strong id="lf-server-modpack">La Familia</strong></div>
+              <div class="lf-server-stat"><span>Laufzeit:</span><strong id="lf-server-uptime" title="Benötigt La Familia Server Metrics">—</strong></div>
+              <div class="lf-server-stat lf-server-performance"><span>TPS:</span><strong id="lf-server-tps" title="Benötigt La Familia Server Metrics">—</strong><span class="lf-bars" id="lf-tps-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
+              <div class="lf-server-stat lf-server-performance"><span>Ping:</span><strong id="lf-server-ping">—</strong><span class="lf-bars" id="lf-ping-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
+            </div>
+            <span class="sr-only" id="friends-status" aria-live="polite">Server wird geprüft</span>
           </div>
-          <button id="btn-show-all-friends" type="button" class="card-text-button">Alle Freunde</button>
         </section>
       </aside>
     </div>

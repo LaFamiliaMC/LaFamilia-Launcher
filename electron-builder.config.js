@@ -18,7 +18,7 @@ module.exports = {
   directories: { output: 'dist', buildResources: 'build' },
   files: [
     'main.js', 'preload.js', 'renderer.js', 'updater.js', 'server-status.js', 'server-ui.js', 'server-status.css', 'config/**/*',
-    'index.html', 'style.css', 'package.json', 'assets/**/*'
+    'index.html', 'style.css', 'server-panel.css', 'server-panel.js', 'server-metrics.js', 'package.json', 'assets/**/*'
   ],
   win: {
     target: [{ target: 'nsis', arch: ['x64'] }],

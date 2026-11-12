@@ -14,6 +14,8 @@ contextBridge.exposeInMainWorld('laFamilia', {
   loadSettings: () => ipcRenderer.invoke('settings:load'),
   saveRam: (ramGb) => ipcRenderer.invoke('settings:save-ram', ramGb),
   openGameFolder: () => ipcRenderer.invoke('game:open-folder'),
+  getMetricsUrl: () => ipcRenderer.invoke('server:get-metrics-url'),
+  saveMetricsUrl: url => ipcRenderer.invoke('server:save-metrics-url',url),
   getServerStatus: () => ipcRenderer.invoke('server:get-status'),
   refreshServerStatus: () => ipcRenderer.invoke('server:refresh'),
   getServerAddress: () => ipcRenderer.invoke('server:get-address'),

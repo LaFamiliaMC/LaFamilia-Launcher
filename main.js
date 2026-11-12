@@ -8,12 +8,13 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const { createUpdaterController } = require('./updater');
 const { parseAddress, queryJavaStatus } = require('./server-status');
+const { queryServerMetrics, validateMetricsUrl } = require('./server-metrics');
 
 let mainWindow;
 let updatesController;
 let serverRefreshInterval;
 let serverCheckPromise;
-let serverSnapshot = {phase:'checking',online:false,address:'23.88.65.87:25565',playersOnline:null,playersMax:null,pingMs:null,version:null,checkedAt:null,error:null};
+let serverSnapshot = {phase:'checking',online:false,address:'23.88.65.87:25565',playersOnline:null,playersMax:null,pingMs:null,version:null,checkedAt:null,error:null,tps:null,uptimeSeconds:null,telemetryAvailable:false,telemetryError:null};
 
 function getGameDirectory() {
   return path.join(app.getPath('appData'), '.minecraft', 'la-familia');
@@ -74,6 +75,27 @@ async function loadServerAddress() {
   }
   return '';
 }
+async function loadMetricsUrl(){
+  for(const file of [path.join(app.getPath('userData'),'metrics.json'),path.join(__dirname,'config','server.json')]){
+    try{
+      const o=JSON.parse(await fs.readFile(file,'utf8'));
+      const value=typeof o.url==='string'?o.url:o.metricsUrl;
+      if(value==='')return '';
+      if(typeof value==='string')return validateMetricsUrl(value);
+    }catch(e){if(e.code==='ENOENT')continue;return '';}
+  }
+  return '';
+}
+async function saveMetricsUrl(value){
+  if(typeof value!=='string')throw Error('Ungültige Metrik-Adresse.');
+  const url=value.trim()?validateMetricsUrl(value):'';
+  const file=path.join(app.getPath('userData'),'metrics.json');
+  await fs.mkdir(path.dirname(file),{recursive:true});
+  const tmp=file+'.'+process.pid+'.tmp';
+  try{await fs.writeFile(tmp,JSON.stringify({url},null,2),'utf8');await fs.rename(tmp,file);}
+  catch(e){await fs.rm(tmp,{force:true}).catch(()=>{});throw e;}
+  return {url};
+}
 function emitServerStatus(fields) {
   serverSnapshot={...serverSnapshot,...fields};
   if(mainWindow && !mainWindow.isDestroyed() && !mainWindow.webContents.isDestroyed()){
@@ -81,18 +103,28 @@ function emitServerStatus(fields) {
   }
   return {...serverSnapshot};
 }
-async function refreshServerStatus() {
+async function refreshServerStatus(){
   if(serverCheckPromise)return serverCheckPromise;
   serverCheckPromise=(async()=>{
     const address=await loadServerAddress();
-    if(!address)return emitServerStatus({phase:'unconfigured',online:false,address:'',playersOnline:null,playersMax:null,pingMs:null,version:null,checkedAt:null,error:null});
-    emitServerStatus({phase:'checking',address,error:null});
-    try{
-      const state=await queryJavaStatus(address,{timeoutMs:5000});
-      return emitServerStatus({...state,address,checkedAt:new Date().toISOString(),error:null});
-    }catch(error){
-      return emitServerStatus({phase:'offline',online:false,address,playersOnline:null,playersMax:null,pingMs:null,version:null,checkedAt:new Date().toISOString(),error:String(error.message||error).slice(0,160)});
-    }
+    if(!address)return emitServerStatus({phase:'unconfigured',online:false,address:'',playersOnline:null,playersMax:null,pingMs:null,version:null,tps:null,uptimeSeconds:null,telemetryAvailable:false,checkedAt:null,error:null});
+    emitServerStatus({phase:'checking',address,error:null,telemetryError:null});
+    const url=await loadMetricsUrl();
+    const [javaResult,metricsResult]=await Promise.allSettled([
+      queryJavaStatus(address,{timeoutMs:5000}),
+      url?queryServerMetrics(url,{timeoutMs:3000}):Promise.resolve(null)
+    ]);
+    const java=javaResult.status==='fulfilled'?javaResult.value:null;
+    const metrics=metricsResult.status==='fulfilled'?metricsResult.value:null;
+    return emitServerStatus({
+      phase:java?'online':'offline',online:Boolean(java),address,
+      playersOnline:java?.playersOnline??null,playersMax:java?.playersMax??null,
+      pingMs:java?.pingMs??null,version:java?.version??null,
+      tps:java&&metrics?metrics.tps:null,uptimeSeconds:java&&metrics?metrics.uptimeSeconds:null,
+      telemetryAvailable:Boolean(java&&metrics),
+      telemetryError:metricsResult.status==='rejected'?String(metricsResult.reason?.message||'Metrik-Schnittstelle nicht erreichbar').slice(0,100):null,
+      checkedAt:new Date().toISOString(),error:java?null:String(javaResult.reason?.message||'Server nicht erreichbar').slice(0,160)
+    });
   })();
   try{return await serverCheckPromise;}finally{serverCheckPromise=null;}
 }
@@ -246,6 +278,12 @@ app.whenReady().then(() => {
   });
 
 
+  ipcMain.handle('server:get-metrics-url',async event=>{
+    getTrustedWindow(event);return {url:await loadMetricsUrl()};
+  });
+  ipcMain.handle('server:save-metrics-url',async(event,url)=>{
+    getTrustedWindow(event);const saved=await saveMetricsUrl(url);await refreshServerStatus();return saved;
+  });
   ipcMain.handle('server:get-status', event => {
     getTrustedWindow(event);
     return {...serverSnapshot};
