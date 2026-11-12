@@ -1,7 +1,7 @@
 'use strict';
 
 // La Familia – Electron-Hauptprozess (Schritt 3)
-// Keine Änderung an Minecraft-Profilen, keine Downloads und kein Spielstart.
+// Fabric-Profilanbindung über den offiziellen Minecraft Launcher; kein eigener OAuth-Start.
 const { app, BrowserWindow, ipcMain, shell, screen } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
@@ -11,6 +11,7 @@ const { parseAddress, queryJavaStatus } = require('./server-status');
 const { queryServerMetrics, validateMetricsUrl } = require('./server-metrics');
 const { createNewsController } = require('./news-feed');
 const { createModpackManager } = require('./modpack-manager');
+const { prepareProfile, openOfficialLauncher, FABRIC_HELP_URL } = require('./minecraft-launch');
 
 const firstInstance = app.requestSingleInstanceLock();
 if(!firstInstance) app.quit();
@@ -390,6 +391,40 @@ if(firstInstance)app.whenReady().then(() => {
     return readInstalledMods();
   });
 
+  ipcMain.handle('game:prepare-profile', async(event) => {
+    getTrustedWindow(event);
+    const ram=await readSettings();
+    return prepareProfile({
+      minecraftRoot:path.join(app.getPath('appData'),'.minecraft'),
+      gameDir:getGameDirectory(),
+      ramGb:ram.ramGb
+    });
+  });
+  ipcMain.handle('game:open-fabric-installer-page', async(event) => {
+    getTrustedWindow(event);
+    await shell.openExternal(FABRIC_HELP_URL);
+    return {ok:true};
+  });
+  ipcMain.handle('game:launch-official', async(event) => {
+    getTrustedWindow(event);
+    const pack=await modpackManager.check();
+    if(pack.phase==='error')return {ok:false,code:'modpack_error',message:'Modpack-Prüfung fehlgeschlagen. Bitte den Mods-Bereich öffnen.'};
+    if(pack.updates>0||pack.phase==='available'||pack.phase==='checking'||pack.phase==='downloading')return {
+      ok:false,code:'modpack_missing',message:'Das La-Familia-Modpack muss zuerst im Mods-Bereich vollständig installiert werden.'
+    };
+    const local=await readInstalledMods();
+    if(local.mods.length===0)return {ok:false,code:'mods_empty',message:'Im La-Familia-Spielordner sind keine Mods vorhanden.'};
+    const ram=await readSettings();
+    const profile=await prepareProfile({
+      minecraftRoot:path.join(app.getPath('appData'),'.minecraft'),
+      gameDir:getGameDirectory(),ramGb:ram.ramGb
+    });
+    if(!profile.ok)return profile;
+    const launched=await openOfficialLauncher();
+    return {ok:true,code:'launcher_open_requested',profileName:profile.profileName,versionId:profile.versionId,
+      profileFile:profile.profileFile,gameDir:profile.gameDir,ramGb:ram.ramGb,requested:launched.requested,
+      message:'Offizieller Minecraft Launcher wird geöffnet. Bitte La Familia – Piraten Update auswählen und dort Spielen klicken.'};
+  });
   ipcMain.handle('game:open-folder', async (event) => {
     getTrustedWindow(event);
     const folder = getGameDirectory();

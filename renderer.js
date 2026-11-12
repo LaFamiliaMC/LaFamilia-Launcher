@@ -4,7 +4,7 @@
  * La Familia – Frontend-Steuerung (Version 0.7)
  * - Navigation innerhalb von #main-content, rechte/linke Spalte bleiben stehen
  * - Sicherer Fensterzugriff nur via preload.js (window.laFamilia)
- * - RAM-Auswahl als UI-Einstellung; noch keine Änderung an launcher_profiles.json
+ * - RAM-Einstellung wird beim Vorbereiten des La-Familia-Profils übernommen
  * - Read-only Anzeige vorhandener .jar-Dateien im lokalen Mods-Ordner
  */
 
@@ -112,9 +112,26 @@ document.addEventListener('DOMContentLoaded', () => {
   byId('btn-discord')?.addEventListener('click', () => {
     notify('Der Discord-Link wird später in der Konfiguration hinterlegt.');
   });
-  byId('btn-play')?.addEventListener('click', () => {
-    byId('play-status').textContent = 'Minecraft-Start folgt in einem späteren Schritt.';
-    notify('Testversion: Der offizielle Minecraft Launcher wird noch nicht gestartet.');
+  byId('btn-play')?.addEventListener('click', async () => {
+    const button=byId('btn-play');
+    if(button.disabled)return;
+    if(!api?.launchMinecraftOfficial){notify('Spielstart ist nur in der installierten Windows-Version verfügbar.');return;}
+    button.disabled=true;
+    byId('play-status').textContent='Modpack und Minecraft-Installation werden geprüft …';
+    notify('Prüfe Modpack, Fabric und Minecraft-Profil …');
+    try{
+      const result=await api.launchMinecraftOfficial();
+      const message=result.message||'Der offizielle Minecraft Launcher konnte nicht gestartet werden.';
+      byId('play-status').textContent=message;
+      notify(message);
+      if(!result.ok&&['missing_fabric','no_launcher_profiles','modpack_missing','mods_empty'].includes(result.code)){
+        if(result.code==='modpack_missing'||result.code==='mods_empty')switchPage('mods');
+        else switchPage('settings');
+      }
+    }catch(error){
+      byId('play-status').textContent='Minecraft-Start fehlgeschlagen: '+error.message;
+      notify('Minecraft-Start fehlgeschlagen: '+error.message);
+    }finally{button.disabled=false;}
   });
 
   // --- Titelleiste: sichere, einzelne Funktionen statt direktem Node.js-Zugriff ---
@@ -163,24 +180,27 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="settings-columns">
         <section class="detail-panel" aria-labelledby="settings-ram-title">
           <h3 id="settings-ram-title">Arbeitsspeicher (RAM)</h3>
-          <p class="panel-explanation">Lege fest, wie viel RAM Minecraft später verwenden soll.</p>
+          <p class="panel-explanation">Lege fest, wie viel RAM das La-Familia-Fabric-Profil verwenden soll.</p>
           <div class="ram-value-row">
             <label for="ram-slider">Minecraft zuweisen</label>
             <strong id="ram-value">6 GB</strong>
           </div>
           <input type="range" id="ram-slider" min="2" max="16" step="1" value="6" aria-describedby="ram-help">
           <div class="slider-labels"><span id="ram-min-label">2 GB</span><span id="ram-max-label">16 GB</span></div>
-          <p id="ram-help">Die Einstellung wird gespeichert. Das Minecraft-Profil wird in diesem Schritt noch nicht verändert.</p>
+          <p id="ram-help">Die Einstellung wird beim nächsten Spielstart in das La-Familia-Minecraft-Profil übernommen.</p>
           <div class="java-argument">Vorgesehener Java-Parameter: <code id="java-args-preview">-Xmx6G</code></div>
           <button type="button" id="btn-save-ram" class="feature-button">RAM-Einstellung speichern</button>
           <p id="ram-save-status" role="status" aria-live="polite"></p>
         </section>
         <section class="detail-panel" aria-labelledby="settings-folder-title">
           <h3 id="settings-folder-title">Minecraft-Spielverzeichnis</h3>
-          <p class="panel-explanation">Hier befinden sich später die La-Familia-Mods und Konfigurationen.</p>
+          <p class="panel-explanation">Hier liegen die La-Familia-Mods und Konfigurationen.</p>
           <code id="settings-game-path" class="path-field">%APPDATA%\\.minecraft\\la-familia</code>
           <p id="system-memory">Gesamter RAM: wird ermittelt …</p>
           <button type="button" id="btn-open-game-folder" class="feature-button">Spielordner öffnen</button>
+          <button type="button" id="btn-prepare-minecraft-profile" class="feature-button">Fabric-Profil einrichten</button>
+          <button type="button" id="btn-open-fabric-installer" class="feature-button">Fabric Installer (offizielle Seite)</button>
+          <p id="minecraft-profile-status" role="status" aria-live="polite"></p>
           <button type="button" id="btn-toggle-fullscreen" class="feature-button" title="Auch mit F11 umschaltbar">Vollbild einschalten (F11)</button>
           <button type="button" id="btn-server-settings" class="feature-button">Serverstatus &amp; Adresse</button>
           <button type="button" id="btn-check-launcher-updates" class="feature-button">Launcher-Update prüfen</button>
@@ -212,11 +232,28 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           window.localStorage.setItem('laFamilia.ramGb', String(ramGb));
         }
-        byId('ram-save-status').textContent = `Gespeichert: ${ramGb} GB (nur Launcher-Einstellung).`;
+        byId('ram-save-status').textContent = `Gespeichert: ${ramGb} GB (wird beim nächsten Spielstart ins Fabric-Profil übernommen).`;
         notify(`RAM-Vorgabe: ${ramGb} GB gespeichert.`);
       } catch (error) {
         byId('ram-save-status').textContent = `Konnte nicht gespeichert werden: ${error.message}`;
       }
+    });
+    byId('btn-prepare-minecraft-profile').addEventListener('click', async()=>{
+      if(!api?.prepareMinecraftProfile){notify('Diese Funktion ist nur in der Windows-EXE verfügbar.');return;}
+      const status=byId('minecraft-profile-status');
+      status.textContent='Prüfe vorhandene Fabric-Installation …';
+      try{
+        const result=await api.prepareMinecraftProfile();
+        status.textContent=result.ok?
+          'La Familia – Piraten Update ist eingerichtet ('+result.versionId+').':
+          result.message;
+        notify(status.textContent);
+      }catch(error){status.textContent='Profilfehler: '+error.message;notify(status.textContent);}
+    });
+    byId('btn-open-fabric-installer').addEventListener('click',async()=>{
+      if(!api?.openFabricInstallerPage){notify('Fabric Installer: https://fabricmc.net/use/installer/');return;}
+      try{await api.openFabricInstallerPage();}
+      catch(error){notify('Fabric-Seite konnte nicht geöffnet werden: '+error.message);}
     });
     byId('btn-toggle-fullscreen').addEventListener('click', () => void runWindowCommand('toggleFullscreen'));
     byId('btn-check-launcher-updates').addEventListener('click', async () => {
