@@ -329,7 +329,8 @@ if(firstInstance)app.whenReady().then(() => {
   });
   playerProfileController=createPlayerProfileController({
     minecraftRoot:path.join(app.getPath('appData'),'.minecraft'),
-    localAppData:process.env.LOCALAPPDATA
+    localAppData:process.env.LOCALAPPDATA,
+    choiceFile:path.join(app.getPath('userData'),'player-profile-choice.json')
   });
   gameStartController=createGameStartController({
     modpackManager,readInstalledMods,installFabricIfNeeded,readSettings,
@@ -468,6 +469,10 @@ if(firstInstance)app.whenReady().then(() => {
   ipcMain.handle('player:refresh-profile',async event=>{
     getTrustedWindow(event);
     return playerProfileController.refresh();
+  });
+  ipcMain.handle('player:choose-name',async (event,name)=>{
+    getTrustedWindow(event);
+    return playerProfileController.chooseName(name);
   });
   ipcMain.handle('game:get-start-state',event=>{getTrustedWindow(event);return gameStartController.getState();});
   ipcMain.handle('game:launch-official',async event=>{getTrustedWindow(event);return gameStartController.start();});
