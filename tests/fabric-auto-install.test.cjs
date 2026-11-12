@@ -62,7 +62,7 @@ test('Falsche Loader-Version nach Installer-Lauf wird abgelehnt',async()=>{
   await assert.rejects(m.ensureFabric({minecraftRoot:'root',userData:'cache',
     inspect:async()=>({root:'root'}),versions:async()=>['fabric-loader-0.19.4-1.21.1'],
     isLauncherRunning:async()=>false,download:async()=>'test.exe',execute:async()=>{}}),
-    /fabric-loader-0\\.19\\.5-1\\.21\\.1/);
+    /fabric-loader-0\.19\.5-1\.21\.1/);
 });
 test('Vorhandener fremder Fabric Loader wird nicht ersetzt, aber Zielversion nachinstalliert',async()=>{
   let calls=0;
