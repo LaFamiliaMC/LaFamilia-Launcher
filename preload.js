@@ -26,6 +26,8 @@ contextBridge.exposeInMainWorld('laFamilia', {
   openGameFolder: () => ipcRenderer.invoke('game:open-folder'),
   prepareMinecraftProfile: () => ipcRenderer.invoke('game:prepare-profile'),
   launchMinecraftOfficial: () => ipcRenderer.invoke('game:launch-official'),
+  getPlayerProfile: () => ipcRenderer.invoke('player:get-profile'),
+  refreshPlayerProfile: () => ipcRenderer.invoke('player:refresh-profile'),
   getGameStartStatus: () => ipcRenderer.invoke('game:get-start-state'),
   onGameStartStatusChange: callback => {
     if(typeof callback!=='function')return ()=>{};
