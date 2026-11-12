@@ -41,7 +41,8 @@ function downloadBuffer(url,{getter=https.get,maxBytes=MAX_EXECUTABLE_BYTES,time
 }
 function parseSha256(data){
   const value=Buffer.isBuffer(data)?data.toString('utf8').trim():String(data).trim();
-  const match=/^([a-f0-9]{64})(?:\s+[*]?[^\r\n]+)?$/i.exec(value);
+  // Nur Leerzeichen/Tabs vor einem optionalen Dateinamen erlauben, niemals einen zweiten Hash in einer neuen Zeile.
+  const match=/^([a-f0-9]{64})(?:[ \t]+\*?[^\r\n]+)?$/i.exec(value);
   if(!match)throw Error('Ungültige offizielle Fabric-SHA-256-Prüfsumme.');
   return match[1].toLowerCase();
 }
