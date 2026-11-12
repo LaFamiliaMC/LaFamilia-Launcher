@@ -292,6 +292,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (element) element.textContent = value;
   }
 
+  document.addEventListener('lafamilia:mods-installed', () => void refreshMods());
+
   function renderNames(listId, mods) {
     const list = byId(listId);
     if (!list) return;

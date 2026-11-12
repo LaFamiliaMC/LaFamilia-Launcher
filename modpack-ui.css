@@ -1,0 +1,26 @@
+/* Dynamische Modpack-Verwaltung über der originalen Modliste, ohne Hintergrundänderungen. */
+#page-mods .mods-detail-panel{display:flex;flex-direction:column;min-height:0;overflow:hidden;}
+#page-mods .lf-modpack-manager{flex:0 0 auto;border-bottom:1px solid rgba(215,176,98,.55);padding:0 0 9px;margin-bottom:8px;}
+#page-mods .lf-pack-heading{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+#page-mods .lf-pack-title{margin:0 0 4px;color:#f2ce74;font-size:13px;}
+#page-mods .lf-pack-version{font:10px Georgia,serif;color:#e0bd7d;}
+#page-mods .lf-pack-message{margin:2px 0 5px;font:11px/1.25 Georgia,serif;color:#f8e8c0;min-height:14px;overflow-wrap:anywhere;}
+#page-mods .lf-pack-stats{display:flex;align-items:center;justify-content:space-between;gap:6px;color:#d2b57d;font:10px Georgia,serif;margin:2px 0 5px;}
+#page-mods .lf-pack-changes{color:#8aeb61;text-align:right;white-space:nowrap;}
+#page-mods .lf-pack-progress-row{display:flex;align-items:center;gap:7px;margin:3px 0 5px;}
+#page-mods .lf-pack-progress{flex:1;width:100%;height:9px;accent-color:#74d940;}
+#page-mods .lf-pack-percent{min-width:100px;font:9px Georgia,serif;color:#dec797;white-space:nowrap;}
+#page-mods .lf-pack-actions{display:flex;flex-wrap:wrap;gap:7px;margin:3px 0;}
+#page-mods .lf-pack-button{min-height:26px;padding:5px 9px;font-size:10px;}
+#page-mods .lf-pack-button[disabled]{opacity:.5;cursor:default;}
+#page-mods .lf-pack-hint{font:9px/1.3 Georgia,serif;color:#bfa981;margin:4px 0 0;}
+#page-mods .lf-pack-conflicts{font:10px Georgia,serif;color:#f1c984;margin:3px 0;max-height:66px;overflow:auto;}
+#page-mods .lf-pack-conflicts summary{cursor:pointer;}
+#page-mods .lf-pack-conflicts ul{list-style:disc;padding-left:18px;margin:4px 0;}
+#page-mods .lf-pack-conflicts li{margin:1px 0;overflow-wrap:anywhere;}
+#page-mods .mods-detail-panel>.detail-header{margin-top:0;}
+#page-mods #mods-page-list{flex:1 1 auto;min-height:55px;height:auto;max-height:none;overflow-y:auto;}
+#page-mods .mods-detail-panel .mods-actions{flex:0 0 auto;margin-top:4px;}
+#page-mods .mods-detail-panel #mods-folder-path{font-size:10px;margin:2px 0;}
+#page-mods .mods-detail-panel #mods-page-status{font-size:10px;margin:2px 0;}
+#page-mods .mods-detail-panel .detail-header .panel-explanation{font-size:9.5px;margin:1px 0 3px;}

@@ -10,12 +10,14 @@ const { createUpdaterController } = require('./updater');
 const { parseAddress, queryJavaStatus } = require('./server-status');
 const { queryServerMetrics, validateMetricsUrl } = require('./server-metrics');
 const { createNewsController } = require('./news-feed');
+const { createModpackManager } = require('./modpack-manager');
 
 let mainWindow;
 let updatesController;
 let serverRefreshInterval;
 let newsRefreshInterval;
 let newsController;
+let modpackManager;
 let serverCheckPromise;
 let serverSnapshot = {phase:'checking',online:false,address:'23.88.65.87:25565',playersOnline:null,playersMax:null,pingMs:null,version:null,checkedAt:null,error:null,tps:null,uptimeSeconds:null,telemetryAvailable:false,telemetryError:null};
 
@@ -237,6 +239,7 @@ function createWindow() {
     void updatesController.check();
     newsController = createNewsController({cacheFile:path.join(app.getPath('userData'),'news-cache.json'),getWindow:()=>mainWindow});
     void newsController.initialize();
+    void modpackManager?.check();
     if(newsRefreshInterval)clearInterval(newsRefreshInterval);
     newsRefreshInterval=setInterval(()=>{void newsController?.refresh();},120000);
     void refreshServerStatus();
@@ -274,6 +277,23 @@ function createWindow() {
 
 app.whenReady().then(() => {
   if (process.platform === 'win32') app.setAppUserModelId('de.lafamilia.minecraftlauncher');
+  modpackManager=createModpackManager({
+    gameDir:getGameDirectory(),
+    userData:app.getPath('userData'),
+    getWindow:()=>mainWindow
+  });
+  ipcMain.handle('modpack:get-state',event=>{
+    getTrustedWindow(event);return modpackManager.getState();
+  });
+  ipcMain.handle('modpack:check',event=>{
+    getTrustedWindow(event);return modpackManager.check();
+  });
+  ipcMain.handle('modpack:install',event=>{
+    getTrustedWindow(event);return modpackManager.install();
+  });
+  ipcMain.handle('modpack:cancel',event=>{
+    getTrustedWindow(event);return modpackManager.cancel();
+  });
   ipcMain.handle('news:get-state',event=>{
     getTrustedWindow(event);
     return newsController?newsController.state():{phase:'loading',articles:[],message:'Neuigkeiten werden geladen …'};

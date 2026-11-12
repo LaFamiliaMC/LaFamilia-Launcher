@@ -11,6 +11,16 @@ contextBridge.exposeInMainWorld('laFamilia', {
   getWindowState: () => ipcRenderer.invoke('window:get-state'),
   getSystemInfo: () => ipcRenderer.invoke('system:info'),
   listLocalMods: () => ipcRenderer.invoke('mods:list-local'),
+  getModpackStatus: () => ipcRenderer.invoke('modpack:get-state'),
+  checkModpackUpdates: () => ipcRenderer.invoke('modpack:check'),
+  installModpack: () => ipcRenderer.invoke('modpack:install'),
+  cancelModpackDownload: () => ipcRenderer.invoke('modpack:cancel'),
+  onModpackStatusChange: callback => {
+    if (typeof callback !== 'function') return () => {};
+    const listener = (_event, value) => callback(value);
+    ipcRenderer.on('modpack:state',listener);
+    return () => ipcRenderer.removeListener('modpack:state',listener);
+  },
   loadSettings: () => ipcRenderer.invoke('settings:load'),
   saveRam: (ramGb) => ipcRenderer.invoke('settings:save-ram', ramGb),
   openGameFolder: () => ipcRenderer.invoke('game:open-folder'),
