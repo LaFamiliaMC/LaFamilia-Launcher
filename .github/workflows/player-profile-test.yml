@@ -38,7 +38,7 @@ jobs:
           if (-not (Test-Path $asar)) { throw 'app.asar fehlt.' }
           $list = npx --no-install asar list $asar
           if ($LASTEXITCODE -ne 0) { throw 'ASAR Paket konnte nicht geprüft werden.' }
-          foreach ($expected in @('player-profile.js', 'player-profile-ui.js', 'player-profile.css', 'skinview3d.bundle.min.js')) {
+          foreach ($expected in @('player-profile.js', 'player-profile-ui.js', 'player-profile.css', 'skinview3d.bundle.js')) {
             if (-not ($list -match [regex]::Escape($expected))) { throw "Datei fehlt in Windows-EXE: $expected" }
           }
       - name: Save the test setup
