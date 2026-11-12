@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const path=require('node:path');
 const fs=require('node:fs/promises');
 const os=require('node:os');
-const {ID,NAME,isFabricVersion,profileArgs,buildProfile,installedFabricVersions,prepareProfile}=require('../minecraft-launch');
+const {ID,NAME,MC_VERSION,LOADER_VERSION,FABRIC_VERSION_ID,isFabricVersion,profileArgs,buildProfile,installedFabricVersions,prepareProfile}=require('../minecraft-launch');
 async function setup(t,{profileExists=true,fabricExists=true}={}){
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'lafamilia-profile-test-'));
   t.after(()=>fs.rm(root,{recursive:true,force:true}));
@@ -17,7 +17,7 @@ async function setup(t,{profileExists=true,fabricExists=true}={}){
     authenticationDatabase:{secret:'nicht verändern'},settings:{keepLauncherOpen:true}
   };
   if(profileExists)await fs.writeFile(profilePath,JSON.stringify(original),'utf8');
-  const version='fabric-loader-0.16.14-1.21.1';
+  const version=FABRIC_VERSION_ID;
   if(fabricExists){
     const dir=path.join(minecraftRoot,'versions',version);
     await fs.mkdir(dir,{recursive:true});
@@ -26,16 +26,21 @@ async function setup(t,{profileExists=true,fabricExists=true}={}){
   return {root,minecraftRoot,gameDir,profilePath,original,version};
 }
 test('Fabric 1.21.1 wird erkannt, andere Minecraft-Versionen nicht',()=>{
-  assert.equal(isFabricVersion('fabric-loader-0.16.14-1.21.1'),true);
+  assert.equal(MC_VERSION,'1.21.1');assert.equal(LOADER_VERSION,'0.19.5');
+  assert.equal(isFabricVersion(FABRIC_VERSION_ID),true);
+  assert.equal(isFabricVersion('fabric-loader-0.16.14-1.21.1'),false);
+  assert.equal(isFabricVersion('fabric-loader-0.19.4-1.21.1'),false);
+  assert.equal(isFabricVersion('fabric-loader-0.19.6-1.21.1'),false);
   assert.equal(isFabricVersion('fabric-loader-0.16.14-1.20.1'),false);
   assert.equal(isFabricVersion('forge-1.21.1'),false);
   assert.equal(isFabricVersion('../../fabric-loader-0.16.14-1.21.1'),false);
 });
 test('La-Familia-Profil bekommt dedizierten Spielordner und RAM',()=>{
   const profile=buildProfile({existing:{created:'2025-01-01T00:00:00.000Z',javaArgs:'-Xmx2G -XX:+UseG1GC'},
-    versionId:'fabric-loader-0.16.14-1.21.1',gameDir:path.resolve('minecraft','la-familia'),ramGb:8});
+    versionId:FABRIC_VERSION_ID,gameDir:path.resolve('minecraft','la-familia'),ramGb:8});
   assert.equal(profile.name,NAME);
-  assert.equal(profile.lastVersionId,'fabric-loader-0.16.14-1.21.1');
+  assert.equal(profile.lastVersionId,FABRIC_VERSION_ID);
+  assert.throws(()=>buildProfile({versionId:'fabric-loader-0.19.4-1.21.1',gameDir:path.resolve('minecraft'),ramGb:8}),/exakt/);
   assert.match(profile.javaArgs,/-Xmx8G/);
   assert.doesNotMatch(profile.javaArgs,/-Xmx2G/);
   assert.match(profile.javaArgs,/UseG1GC/);
@@ -92,4 +97,27 @@ test('Profil darf nur auf eine vorhandene, passende Fabric Versionsdatei verweis
   await fs.mkdir(other);
   await fs.writeFile(path.join(other,'fabric-loader-1.99.1-1.21.1.json'),JSON.stringify({id:'falsche-version'}));
   assert.deepEqual(await installedFabricVersions(env.minecraftRoot),[env.version]);
+});
+
+test('Schon vorhandene andere Fabric-Version genügt nicht für unser Profil',async t=>{
+  const env=await setup(t,{fabricExists:false});
+  const older='fabric-loader-0.19.4-1.21.1';
+  const dir=path.join(env.minecraftRoot,'versions',older);
+  await fs.mkdir(dir,{recursive:true});
+  await fs.writeFile(path.join(dir,older+'.json'),JSON.stringify({id:older,inheritsFrom:'1.21.1'}));
+  assert.deepEqual(await installedFabricVersions(env.minecraftRoot),[]);
+  const result=await prepareProfile({...env,ramGb:6,processRunning:async()=>false});
+  assert.equal(result.ok,false);
+  assert.equal(result.code,'missing_fabric');
+});
+test('Veraltetes La-Familia-Profil wird nur auf Zielversion aktualisiert',async t=>{
+  const env=await setup(t);
+  const data=JSON.parse(await fs.readFile(env.profilePath,'utf8'));
+  data.profiles[ID]={name:'La Familia – Piraten Update',lastVersionId:'fabric-loader-0.19.4-1.21.1',gameDir:env.gameDir};
+  await fs.writeFile(env.profilePath,JSON.stringify(data));
+  const result=await prepareProfile({...env,ramGb:6,processRunning:async()=>false});
+  assert.equal(result.ok,true);
+  const actual=JSON.parse(await fs.readFile(env.profilePath,'utf8'));
+  assert.equal(actual.profiles[ID].lastVersionId,FABRIC_VERSION_ID);
+  assert.deepEqual(actual.profiles['existing-player'],env.original.profiles['existing-player']);
 });

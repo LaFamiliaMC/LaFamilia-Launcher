@@ -7,7 +7,7 @@ const https=require('node:https');
 const crypto=require('node:crypto');
 const {execFile}=require('node:child_process');
 const {promisify}=require('node:util');
-const {locateInstallation,installedFabricVersions,launcherProcessRunning}=require('./minecraft-launch');
+const {MC_VERSION,LOADER_VERSION,FABRIC_VERSION_ID,locateInstallation,installedFabricVersions,launcherProcessRunning}=require('./minecraft-launch');
 const runFile=promisify(execFile);
 const INSTALLER_VERSION='1.1.2';
 const FILENAME='fabric-installer-'+INSTALLER_VERSION+'.exe';
@@ -73,7 +73,7 @@ async function obtainInstaller(cacheDir,{fetchFile=downloadBuffer,update=()=>{}}
   return exe;
 }
 async function executeFabricInstaller(exe,root,{run=runFile}={}){
-  const args=['client','-dir',root,'-mcversion','1.21.1','-noprofile'];
+  const args=['client','-dir',root,'-mcversion',MC_VERSION,'-loader',LOADER_VERSION,'-noprofile'];
   try{
     await run(exe,args,{windowsHide:true,timeout:240000,maxBuffer:1024*1024});
   }catch(error){
@@ -88,19 +88,19 @@ async function ensureFabric({minecraftRoot,userData,update=()=>{},inspect=locate
   const installation=await inspect(minecraftRoot);
   if(!installation)return {ok:false,code:'no_launcher_profiles',message:'Bitte den offiziellen Minecraft Launcher einmal starten und wieder schließen.'};
   let installed=await versions(installation.root);
-  if(installed.length)return {ok:true,code:'already_installed',versionId:installed[0]};
+  if(installed.includes(FABRIC_VERSION_ID))return {ok:true,code:'already_installed',versionId:FABRIC_VERSION_ID};
   if(await isLauncherRunning())return {ok:false,code:'launcher_running',
     message:'Bitte den offiziellen Minecraft Launcher schließen, damit Fabric sicher installiert werden kann.'};
-  update('Fabric Loader 1.21.1 fehlt – automatische Installation beginnt …');
+  update('Fabric Loader '+LOADER_VERSION+' für Minecraft '+MC_VERSION+' fehlt – automatische Installation beginnt …');
   const exe=await download(path.join(userData,'fabric-installer-cache'),{update});
   if(await isLauncherRunning())return {ok:false,code:'launcher_running',
     message:'Minecraft Launcher wurde während des Downloads geöffnet. Bitte schließen und erneut versuchen.'};
-  update('Installiere Fabric Loader 1.21.1 über den offiziellen Installer …');
+  update('Installiere Fabric Loader '+LOADER_VERSION+' für Minecraft '+MC_VERSION+' über den offiziellen Installer …');
   await execute(exe,installation.root);
   installed=await versions(installation.root);
-  if(!installed.length)throw Error('Fabric wurde nicht erkannt. Bitte prüfen, ob der offizielle Installer erfolgreich war.');
-  update('Fabric Loader 1.21.1 wurde installiert.');
-  return {ok:true,code:'installed',versionId:installed[0]};
+  if(!installed.includes(FABRIC_VERSION_ID))throw Error('Die benötigte Fabric-Version '+FABRIC_VERSION_ID+' wurde nach der Installation nicht erkannt.');
+  update('Fabric Loader '+LOADER_VERSION+' für Minecraft '+MC_VERSION+' wurde installiert.');
+  return {ok:true,code:'installed',versionId:FABRIC_VERSION_ID};
 }
 module.exports={INSTALLER_VERSION,FILENAME,ARTIFACT_URL,CHECKSUM_URL,verifySource,
   parseSha256,checksum,downloadBuffer,obtainInstaller,executeFabricInstaller,ensureFabric};

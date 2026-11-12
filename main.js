@@ -43,7 +43,7 @@ function setFabricStatus(phase,message){
 function installFabricIfNeeded(){
   if(fabricInstallPromise)return fabricInstallPromise;
   fabricInstallPromise=(async()=>{
-    setFabricStatus('checking','Prüfe Fabric Loader 1.21.1 …');
+    setFabricStatus('checking','Prüfe Fabric Loader 0.19.5 für Minecraft 1.21.1 …');
     try{
       const result=await ensureFabric({
         minecraftRoot:path.join(app.getPath('appData'),'.minecraft'),
@@ -51,7 +51,7 @@ function installFabricIfNeeded(){
         update:message=>setFabricStatus('installing',message)
       });
       setFabricStatus(result.ok?'ready':'action-needed',
-        result.ok?(result.code==='installed'?'Fabric Loader 1.21.1 installiert.':'Fabric Loader 1.21.1 ist bereits vorhanden.'):result.message);
+        result.ok?(result.code==='installed'?'Fabric Loader 0.19.5 für Minecraft 1.21.1 installiert.':'Fabric Loader 0.19.5 für Minecraft 1.21.1 ist bereits vorhanden.'):result.message);
       return result;
     }catch(error){
       const message='Fabric-Installation fehlgeschlagen: '+error.message;

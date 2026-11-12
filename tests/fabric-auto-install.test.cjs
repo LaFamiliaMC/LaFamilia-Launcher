@@ -29,23 +29,23 @@ test('Hash-Abweichung verhindert EXE-Installation',async t=>{
 test('Fabric CLI installiert Client 1.21.1 ohne zusätzliches Profil',async()=>{
   let opts;
   await m.executeFabricInstaller('C:\\Tools\\Fabric.exe','C:\\Minecraft',{run:async(exe,args,params)=>{opts={exe,args,params};return {stdout:'ok'};}});
-  assert.deepEqual(opts.args,['client','-dir','C:\\Minecraft','-mcversion','1.21.1','-noprofile']);
+  assert.deepEqual(opts.args,['client','-dir','C:\\Minecraft','-mcversion','1.21.1','-loader','0.19.5','-noprofile']);
   assert.equal(opts.params.windowsHide,true);
 });
 test('Vorhandenes Fabric wird nicht neu installiert',async()=>{
   let requests=0;
   const result=await m.ensureFabric({minecraftRoot:'root',userData:'cache',
-    inspect:async()=>({root:'root'}),versions:async()=>['fabric-loader-0.17.3-1.21.1'],
+    inspect:async()=>({root:'root'}),versions:async()=>['fabric-loader-0.17.3-1.21.1','fabric-loader-0.19.5-1.21.1'],
     download:async()=>{requests++;}});
   assert.equal(result.code,'already_installed');assert.equal(requests,0);
 });
 test('Fehlendes Fabric wird genau einmal nachgeladen',async()=>{
   let calls=0,installed=false;
   const result=await m.ensureFabric({minecraftRoot:'root',userData:'cache',
-    inspect:async()=>({root:'root'}),versions:async()=>installed?['fabric-loader-0.17.3-1.21.1']:[],
+    inspect:async()=>({root:'root'}),versions:async()=>installed?['fabric-loader-0.19.5-1.21.1']:['fabric-loader-0.17.3-1.21.1'],
     isLauncherRunning:async()=>false,download:async()=>{calls++;return 'test.exe';},
     execute:async()=>{installed=true;}});
-  assert.equal(result.code,'installed');assert.equal(calls,1);
+  assert.equal(result.code,'installed');assert.equal(result.versionId,'fabric-loader-0.19.5-1.21.1');assert.equal(calls,1);
 });
 test('Geöffneter Minecraft Launcher und fehlendes Profil blockieren Installation',async()=>{
   const base={minecraftRoot:'root',userData:'cache',versions:async()=>[],download:async()=>{throw Error('Nicht herunterladen.');}};
@@ -55,5 +55,21 @@ test('Geöffneter Minecraft Launcher und fehlendes Profil blockieren Installatio
 test('Fehlende Fabric-Version nach Installer-Ausführung führt zu Fehler',async()=>{
   await assert.rejects(m.ensureFabric({minecraftRoot:'root',userData:'cache',
     inspect:async()=>({root:'root'}),versions:async()=>[],isLauncherRunning:async()=>false,
-    download:async()=>'test.exe',execute:async()=>{}}),/wurde nicht erkannt/);
+    download:async()=>'test.exe',execute:async()=>{}}),/wurde nach der Installation nicht erkannt/);
+});
+
+test('Falsche Loader-Version nach Installer-Lauf wird abgelehnt',async()=>{
+  await assert.rejects(m.ensureFabric({minecraftRoot:'root',userData:'cache',
+    inspect:async()=>({root:'root'}),versions:async()=>['fabric-loader-0.19.4-1.21.1'],
+    isLauncherRunning:async()=>false,download:async()=>'test.exe',execute:async()=>{}}),
+    /fabric-loader-0\\.19\\.5-1\\.21\\.1/);
+});
+test('Vorhandener fremder Fabric Loader wird nicht ersetzt, aber Zielversion nachinstalliert',async()=>{
+  let calls=0;
+  const required='fabric-loader-0.19.5-1.21.1';
+  const result=await m.ensureFabric({minecraftRoot:'root',userData:'cache',
+    inspect:async()=>({root:'root'}),versions:async()=>calls?[required,'fabric-loader-0.19.4-1.21.1']:['fabric-loader-0.19.4-1.21.1'],
+    isLauncherRunning:async()=>false,download:async()=> 'test.exe',execute:async()=>{calls++;}});
+  assert.equal(result.versionId,required);
+  assert.equal(calls,1);
 });

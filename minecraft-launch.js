@@ -10,22 +10,14 @@ const execFileAsync=promisify(execFile);
 const ID='la-familia-fabric-1-21-1';
 const NAME='La Familia – Piraten Update';
 const MC_VERSION='1.21.1';
+const LOADER_VERSION='0.19.5';
+const FABRIC_VERSION_ID=`fabric-loader-${LOADER_VERSION}-${MC_VERSION}`;
 const PROFILE_FILES=['launcher_profiles_microsoft_store.json','launcher_profiles.json'];
 const STORE_ROOT=path.join(process.env.LOCALAPPDATA||path.join(os.homedir(),'AppData','Local'),'Packages','Microsoft.4297127D64EC6_8wekyb3d8bbwe','LocalCache','Local','minecraft');
 const FABRIC_HELP_URL='https://fabricmc.net/use/installer/';
 function isFabricVersion(id){
-  return typeof id==='string'&&/^fabric-loader-[0-9]+\.[0-9]+(?:\.[0-9]+)?(?:\.[0-9A-Za-z.-]+)?-1\.21\.1$/.test(id);
-}
-function numericVersion(id){
-  return String(id).replace(/^fabric-loader-/,'').replace(/-1\.21\.1$/,'').split(/[^0-9]+/).map(n=>Number(n)||0);
-}
-function compareVersions(a,b){
-  const p=numericVersion(a),q=numericVersion(b);
-  for(let i=0;i<Math.max(p.length,q.length);i++){
-    const n=(p[i]||0)-(q[i]||0);
-    if(n)return n;
-  }
-  return a.localeCompare(b);
+  // La Familia darf niemals stillschweigend eine andere Loader-Version starten.
+  return typeof id==='string'&&id===FABRIC_VERSION_ID;
 }
 function validRam(ramGb){return Number.isInteger(ramGb)&&ramGb>=2&&ramGb<=24;}
 function profileArgs(existing,ramGb){
@@ -35,7 +27,7 @@ function profileArgs(existing,ramGb){
   return ('-Xmx'+ramGb+'G '+cleaned).trim();
 }
 function buildProfile({existing,versionId,gameDir,ramGb,now=new Date()}){
-  if(!isFabricVersion(versionId))throw Error('Keine kompatible Fabric-Version.');
+  if(!isFabricVersion(versionId))throw Error('La Familia benötigt exakt '+FABRIC_VERSION_ID+'.');
   if(typeof gameDir!=='string'||!path.isAbsolute(gameDir))throw Error('Ungültiger Spielordner.');
   const prior=existing&&typeof existing==='object'&&!Array.isArray(existing)?existing:{};
   return {...prior,type:'custom',name:NAME,created:prior.created||now.toISOString(),
@@ -75,7 +67,7 @@ async function installedFabricVersions(root){
       if(info.id===item.name)matches.push(item.name);
     }catch(error){if(error.code==='ENOENT'||error instanceof SyntaxError)continue;throw error;}
   }
-  return matches.sort(compareVersions).reverse();
+  return matches;
 }
 async function launcherProcessRunning({runTasklist=execFileAsync}={}){
   if(process.platform!=='win32')return false;
@@ -102,7 +94,7 @@ async function prepareProfile({minecraftRoot,gameDir,ramGb,processRunning=launch
     message:'Der offizielle Minecraft Launcher muss einmal gestartet und wieder geschlossen werden.'};
   const versions=await installedFabricVersions(installation.root);
   if(!versions.length)return {ok:false,code:'missing_fabric',
-    message:'Fabric Loader 1.21.1 fehlt. Bitte den offiziellen Fabric Installer für 1.21.1 ausführen.'};
+    message:'Fabric Loader '+LOADER_VERSION+' für Minecraft '+MC_VERSION+' fehlt. Der La Familia Launcher installiert diese Version automatisch.'};
   const file=installation.file;
   if(await processRunning())return {ok:false,code:'launcher_running',
     message:'Bitte den offiziellen Minecraft Launcher vollständig schließen und danach erneut versuchen.'};
@@ -155,5 +147,5 @@ function spawnLaunch(runSpawn,exe,args){
     child.once('spawn',()=>{child.unref();resolve({requested:true,executable:exe});});
   });
 }
-module.exports={ID,NAME,MC_VERSION,FABRIC_HELP_URL,isFabricVersion,profileArgs,buildProfile,
+module.exports={ID,NAME,MC_VERSION,LOADER_VERSION,FABRIC_VERSION_ID,FABRIC_HELP_URL,isFabricVersion,profileArgs,buildProfile,
   locateInstallation,installedFabricVersions,launcherProcessRunning,prepareProfile,openOfficialLauncher};
