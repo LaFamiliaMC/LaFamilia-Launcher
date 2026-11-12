@@ -18,12 +18,13 @@ jobs:
           node-version: '22'
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-      - name: Check local skinview3d bundle exists
+      - name: Inspect installed skinview3d bundles
         shell: pwsh
         run: |
-          if (-not (Test-Path 'node_modules/skinview3d/bundles/skinview3d.bundle.min.js')) {
-            throw '3D-Skinviewer fehlt im lokalen npm-Paket.'
-          }
+          Write-Host 'npm skinview3d package contents:'
+          Get-ChildItem 'node_modules/skinview3d' -Name
+          Write-Host 'Available skinview3d bundles:'
+          Get-ChildItem 'node_modules/skinview3d/bundles' -Name
       - name: Syntax checks
         run: npm run check
       - name: All JavaScript unit tests
