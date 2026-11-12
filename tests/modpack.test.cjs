@@ -124,3 +124,34 @@ test('Manager installiert nur geprüfte neue Mods und schützt fremde',async t=>
   assert.equal(state.managed['mods/example.jar'].sha256,HASH(data));
   assert.equal(state.managed['mods/own.jar'],undefined);
 });
+
+test('Abgebrochene Installation stellt bestehende verwaltete Mod wieder her',async t=>{
+  const root=await tempDir();t.after(()=>fs.rm(root,{recursive:true,force:true}));
+  const game=path.join(root,'minecraft'),userData=path.join(root,'user');
+  const oldBytes=Buffer.from('Version alt'),newBytes=Buffer.from('Version neu');
+  const otherBytes=Buffer.from('Zweiter Download');
+  await fs.mkdir(path.join(game,'mods'),{recursive:true});
+  await fs.mkdir(userData,{recursive:true});
+  await fs.writeFile(path.join(game,'mods','old.jar'),oldBytes);
+  await fs.writeFile(path.join(userData,'modpack-state.json'),JSON.stringify({
+    schema:1,version:'0.9.0',managed:{'mods/old.jar':{sha256:HASH(oldBytes),size:oldBytes.length}}
+  }));
+  const desired=normalizeManifest(manifest({mods:[
+    entry('mods','old.jar',newBytes),entry('mods','new.jar',otherBytes)
+  ]}));
+  const mgr=createModpackManager({
+    gameDir:game,userData,getWindow:()=>null,fetchLatest:async()=>({manifest:desired}),
+    download:async(asset,cacheDir)=>{
+      if(asset.file==='new.jar')return path.join(cacheDir,'absent.jar');
+      await fs.mkdir(cacheDir,{recursive:true});
+      const local=path.join(cacheDir,'updated-old.jar');
+      await fs.writeFile(local,newBytes);
+      return local;
+    }
+  });
+  const result=await mgr.install();
+  assert.equal(result.phase,'error');
+  assert.equal(await fs.readFile(path.join(game,'mods','old.jar'),'utf8'),'Version alt');
+  await assert.rejects(fs.stat(path.join(game,'mods','new.jar')),{code:'ENOENT'});
+  await assert.rejects(fs.stat(path.join(userData,'modpack-transaction.json')),{code:'ENOENT'});
+});
