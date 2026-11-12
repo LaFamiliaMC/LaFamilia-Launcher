@@ -499,7 +499,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupInfoPage('quests-page-content', 'Die Questdaten werden später vom La-Familia-Server geladen.');
   setupInfoPage('worldmap-page-content', 'Die interaktive Weltkarte wird später mit dem Server verbunden. Die Mini-Karte rechts bleibt sichtbar.');
   setupInfoPage('friends-page-content', 'Die echte Freundesliste und Online-Anzeige werden später eingebunden.');
-  setupInfoPage('profile-page-content', 'Hier erscheint später dein echtes Minecraft-Spielerprofil mit Skin und Statistiken.');
+  // Der echte Spielerprofil-Bereich wird von player-profile-ui.js in derselben Mitte verwaltet.
   setupInfoPage('statistics-page-content', 'Spielzeit, Erfolge und weitere Serverstatistiken werden hier später dargestellt.');
 
   // Beispiel-Quest-Reiter umschalten; keine echten Serverdaten vortäuschen.
