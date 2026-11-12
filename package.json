@@ -7,13 +7,14 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "check": "node --check main.js && node --check preload.js && node --check renderer.js && node --check updater.js && node --check electron-builder.config.js && node --check server-status.js && node --check server-metrics.js && node --check server-panel.js && node --check server-ui.js && node --check news-feed.js && node --check news-ui.js && node --check modpack-core.js && node --check modpack-net.js && node --check modpack-zip.js && node --check modpack-manager.js && node --check modpack-ui.js && node --check minecraft-launch.js && node --check fabric-auto-install.js && node --check game-start.js",
+    "check": "node --check main.js && node --check preload.js && node --check renderer.js && node --check updater.js && node --check electron-builder.config.js && node --check server-status.js && node --check server-metrics.js && node --check server-panel.js && node --check server-ui.js && node --check news-feed.js && node --check news-ui.js && node --check modpack-core.js && node --check modpack-net.js && node --check modpack-zip.js && node --check modpack-manager.js && node --check modpack-ui.js && node --check minecraft-launch.js && node --check fabric-auto-install.js && node --check game-start.js && node --check player-profile.js && node --check player-profile-ui.js",
     "test": "node --test tests/*.test.cjs",
     "dist:win": "electron-builder --config electron-builder.config.js --win nsis --x64 --publish never"
   },
   "dependencies": {
     "electron-updater": "6.8.12",
-    "yauzl": "3.4.0"
+    "yauzl": "3.4.0",
+    "skinview3d": "3.4.2"
   },
   "devDependencies": {
     "electron": "45.3.0",
