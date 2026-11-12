@@ -31,7 +31,15 @@ document.addEventListener('DOMContentLoaded',()=>{
             <dt>Skin-Modell</dt><dd id="lf-profile-model">—</dd>
             <dt>Original-Cape</dt><dd id="lf-profile-cape">—</dd>
           </dl>
-          <p class="lf-profile-info-tip">Spielername, Skin und Cape werden über deinen aktiven Minecraft-Account und Mojangs Profildienst geladen.</p>
+          <div class="lf-profile-manual">
+            <label for="lf-profile-username">Spielername (falls nicht automatisch erkannt)</label>
+            <div class="lf-profile-name-row">
+              <input id="lf-profile-username" type="text" minlength="3" maxlength="16"
+                placeholder="Minecraft-Name" autocomplete="off" spellcheck="false">
+              <button type="button" id="lf-profile-load-name" class="feature-button">Skin laden</button>
+            </div>
+            <p>Nur öffentliche Skin-Anzeige, keine Microsoft-Anmeldung.</p>
+          </div>
         </div>
       </div>
       <div id="lf-profile-statistics" class="lf-profile-additional" hidden>
@@ -102,7 +110,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     const sidebarName=byId('player-name');
     if(sidebarName)sidebarName.textContent=profile.name||'Nicht verbunden';
     byId('lf-profile-uuid').textContent=profile.uuid||'—';
-    byId('lf-profile-edition').textContent=profile.uuid?'Java Edition erkannt':'Nicht angemeldet';
+    byId('lf-profile-edition').textContent=profile.uuid?
+      (profile.source==='launcher'?'Java Edition erkannt':'Öffentliches Spielerprofil'):'Nicht angemeldet';
     byId('lf-profile-model').textContent=profile.skinData?(profile.model==='slim'?'Schmale Arme (Alex)':'Klassisch (Steve)'):'—';
     byId('lf-profile-cape').textContent=profile.hasCape?'Ja – echtes Minecraft-Cape':'Kein Cape im Profil';
     updateStatsPlaceholder();
@@ -131,6 +140,40 @@ document.addEventListener('DOMContentLoaded',()=>{
     }
   }
 
+  const input=byId('lf-profile-username');
+  const nameButton=byId('lf-profile-load-name');
+  async function loadByName(){
+    if(!api?.choosePlayerName){
+      status.textContent='Namenssuche nur in der aktuellen Windows-Version verfügbar.';
+      return;
+    }
+    const value=input.value.trim();
+    if(!/^[a-zA-Z0-9_]{3,16}$/.test(value)){
+      status.textContent='Bitte gültigen Minecraft-Namen mit 3–16 Zeichen eingeben.';
+      return;
+    }
+    const own=++requestNumber;
+    refresh.disabled=true;nameButton.disabled=true;
+    status.textContent='Suche öffentliches Minecraft-Profil „'+value+'“ …';
+    try{
+      const profile=await api.choosePlayerName(value);
+      if(own!==requestNumber)return;
+      renderAccountInfo(profile);
+      status.textContent=profile.message||(profile.ok?'Minecraft-Profil gefunden.':'Minecraft-Spieler nicht gefunden.');
+      await showSkin(profile);
+      loaded=Boolean(profile.ok);
+    }catch(error){
+      if(own!==requestNumber)return;
+      status.textContent='Skin-Suche fehlgeschlagen: '+error.message;
+      clearViewer();
+    }finally{
+      if(own===requestNumber){refresh.disabled=false;nameButton.disabled=false;}
+    }
+  }
+  nameButton.addEventListener('click',()=>void loadByName());
+  input.addEventListener('keydown',event=>{
+    if(event.key==='Enter'){event.preventDefault();void loadByName();}
+  });
   refresh.addEventListener('click',()=>void loadProfile(true));
   const tabs=[...host.querySelectorAll('[data-lf-tab]')];
   for(const tab of tabs){
