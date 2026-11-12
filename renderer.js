@@ -112,36 +112,63 @@ document.addEventListener('DOMContentLoaded', () => {
   byId('btn-discord')?.addEventListener('click', () => {
     notify('Der Discord-Link wird später in der Konfiguration hinterlegt.');
   });
-  if(api?.onFabricInstallStatusChange){
-    api.onFabricInstallStatusChange(state=>{
-      const text=state?.message||'';
-      if(!text)return;
-      const settings=document.getElementById('minecraft-profile-status');
-      if(settings)settings.textContent=text;
-      const playStatus=document.getElementById('play-status');
-      if(playStatus&&['checking','installing','error'].includes(state.phase))playStatus.textContent=text;
-    });
+  // Den bereits vorhandenen transparenten Fortschrittsbalken beim Spielen-Button nutzen.
+  const progressBox=byId('play-progress-container'),progress=byId('play-progress');
+  const progressText=byId('play-progress-text'),playStatus=byId('play-status');
+  const playButton=byId('btn-play');
+  let playActive=false,playPhase='idle';
+  function renderPlay(value,label,message,working){
+    if(!progressBox||!progress||!progressText)return;
+    progressBox.hidden=false;
+    const percent=Math.max(0,Math.min(100,Math.round(Number(value)||0)));
+    progress.value=percent;
+    progressText.textContent=label+' · '+percent+' %';
+    if(message&&playStatus)playStatus.textContent=message;
+    playActive=working;
+    if(playButton)playButton.disabled=working;
   }
-  byId('btn-play')?.addEventListener('click', async () => {
-    const button=byId('btn-play');
-    if(button.disabled)return;
-    if(!api?.launchMinecraftOfficial){notify('Spielstart ist nur in der installierten Windows-Version verfügbar.');return;}
-    button.disabled=true;
-    byId('play-status').textContent='Modpack und Minecraft-Installation werden geprüft …';
-    notify('Prüfe Modpack und Fabric; fehlender Fabric Loader wird automatisch installiert …');
+  function onGameState(state){
+    if(!state?.phase||state.phase==='idle')return;
+    playPhase=state.phase;
+    const labels={'checking-modpack':'Modcheck','updating-modpack':'Mods',
+      'verifying-modpack':'Prüfung','checking-mods':'Mods',
+      'checking-fabric':'Fabric','preparing-profile':'Profil',
+      'opening-launcher':'Start','ready':'Bereit','error':'Fehler'};
+    renderPlay(state.progress,labels[state.phase]||'Start',state.message,Boolean(state.active));
+    if(state.phase==='ready')void refreshMods();
+  }
+  if(api?.onGameStartStatusChange)api.onGameStartStatusChange(onGameState);
+  api?.getGameStartStatus?.().then(onGameState).catch(()=>{});
+  if(api?.onModpackStatusChange)api.onModpackStatusChange(state=>{
+    if(!playActive||!['updating-modpack','verifying-modpack'].includes(playPhase))return;
+    if(!['checking','downloading','verifying','installing','recovering'].includes(state?.phase))return;
+    const value=state.phase==='downloading'?12+Math.round((Number(state.progress)||0)*0.68):
+      state.phase==='verifying'?80:state.phase==='installing'?82:12;
+    renderPlay(value,state.phase==='downloading'?'Download':'Modprüfung',state.message,true);
+  });
+  if(api?.onFabricInstallStatusChange)api.onFabricInstallStatusChange(state=>{
+    const message=state?.message;
+    if(!message)return;
+    const settings=byId('minecraft-profile-status');
+    if(settings)settings.textContent=message;
+    if(playActive&&playPhase==='checking-fabric')renderPlay(89,'Fabric',message,true);
+  });
+  playButton?.addEventListener('click',async()=>{
+    if(playButton.disabled)return;
+    if(!api?.launchMinecraftOfficial){notify('Spielstart nur in Windows-EXE verfügbar.');return;}
+    renderPlay(2,'Start','Prüfe Modpack und Minecraft-Installation …',true);
     try{
       const result=await api.launchMinecraftOfficial();
-      const message=result.message||'Der offizielle Minecraft Launcher konnte nicht gestartet werden.';
-      byId('play-status').textContent=message;
+      const message=result?.message||'Minecraft Launcher konnte nicht gestartet werden.';
       notify(message);
-      if(!result.ok&&['missing_fabric','install_failed','launcher_running','no_launcher_profiles','modpack_missing','mods_empty'].includes(result.code)){
-        if(result.code==='modpack_missing'||result.code==='mods_empty')switchPage('mods');
-        else switchPage('settings');
-      }
+      renderPlay(result.ok?100:0,result.ok?'Bereit':'Fehler',message,false);
+      if(result.ok)void refreshMods();
+      else if(['modpack_error','modpack_conflicts','modpack_unverified','mods_empty'].includes(result.code))switchPage('mods');
+      else if(['install_failed','launcher_running','no_launcher_profiles','profile_error'].includes(result.code))switchPage('settings');
     }catch(error){
-      byId('play-status').textContent='Minecraft-Start fehlgeschlagen: '+error.message;
-      notify('Minecraft-Start fehlgeschlagen: '+error.message);
-    }finally{button.disabled=false;}
+      const message='Minecraft-Start fehlgeschlagen: '+error.message;
+      renderPlay(0,'Fehler',message,false);notify(message);
+    }finally{playButton.disabled=false;}
   });
 
   // --- Titelleiste: sichere, einzelne Funktionen statt direktem Node.js-Zugriff ---

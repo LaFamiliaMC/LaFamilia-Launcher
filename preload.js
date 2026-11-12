@@ -26,6 +26,13 @@ contextBridge.exposeInMainWorld('laFamilia', {
   openGameFolder: () => ipcRenderer.invoke('game:open-folder'),
   prepareMinecraftProfile: () => ipcRenderer.invoke('game:prepare-profile'),
   launchMinecraftOfficial: () => ipcRenderer.invoke('game:launch-official'),
+  getGameStartStatus: () => ipcRenderer.invoke('game:get-start-state'),
+  onGameStartStatusChange: callback => {
+    if(typeof callback!=='function')return ()=>{};
+    const listener=(_event,state)=>callback(state);
+    ipcRenderer.on('game:start-state',listener);
+    return ()=>ipcRenderer.removeListener('game:start-state',listener);
+  },
   openFabricInstallerPage: () => ipcRenderer.invoke('game:open-fabric-installer-page'),
   installFabricAutomatically: () => ipcRenderer.invoke('fabric:install'),
   getFabricInstallStatus: () => ipcRenderer.invoke('fabric:get-state'),

@@ -13,6 +13,8 @@ const { createNewsController } = require('./news-feed');
 const { createModpackManager } = require('./modpack-manager');
 const { prepareProfile, openOfficialLauncher, FABRIC_HELP_URL } = require('./minecraft-launch');
 const { ensureFabric } = require('./fabric-auto-install');
+const { createGameStartController } = require('./game-start');
+const { launcherProcessRunning } = require('./minecraft-launch');
 
 const firstInstance = app.requestSingleInstanceLock();
 if(!firstInstance) app.quit();
@@ -28,6 +30,7 @@ let serverRefreshInterval;
 let newsRefreshInterval;
 let newsController;
 let modpackManager;
+let gameStartController;
 let fabricInstallPromise=null;
 let fabricStatus={phase:'idle',message:'Fabric Loader wird bei Bedarf automatisch installiert.'};
 let serverCheckPromise;
@@ -322,6 +325,18 @@ if(firstInstance)app.whenReady().then(() => {
     userData:app.getPath('userData'),
     getWindow:()=>mainWindow
   });
+  gameStartController=createGameStartController({
+    modpackManager,readInstalledMods,installFabricIfNeeded,readSettings,
+    prepareProfile:ramGb=>prepareProfile({
+      minecraftRoot:path.join(app.getPath('appData'),'.minecraft'),
+      gameDir:getGameDirectory(),ramGb,preferForPlay:true
+    }),
+    openOfficialLauncher,isLauncherRunning:launcherProcessRunning,
+    emit:state=>{
+      if(mainWindow&&!mainWindow.isDestroyed()&&!mainWindow.webContents.isDestroyed())
+        mainWindow.webContents.send('game:start-state',state);
+    }
+  });
   ipcMain.handle('modpack:get-state',event=>{
     getTrustedWindow(event);return modpackManager.getState();
   });
@@ -440,28 +455,8 @@ if(firstInstance)app.whenReady().then(() => {
     await shell.openExternal(FABRIC_HELP_URL);
     return {ok:true};
   });
-  ipcMain.handle('game:launch-official', async(event) => {
-    getTrustedWindow(event);
-    const pack=await modpackManager.check();
-    if(pack.phase==='error')return {ok:false,code:'modpack_error',message:'Modpack-Prüfung fehlgeschlagen. Bitte den Mods-Bereich öffnen.'};
-    if(pack.updates>0||pack.phase==='available'||pack.phase==='checking'||pack.phase==='downloading')return {
-      ok:false,code:'modpack_missing',message:'Das La-Familia-Modpack muss zuerst im Mods-Bereich vollständig installiert werden.'
-    };
-    const local=await readInstalledMods();
-    if(local.mods.length===0)return {ok:false,code:'mods_empty',message:'Im La-Familia-Spielordner sind keine Mods vorhanden.'};
-    const fabric=await installFabricIfNeeded();
-    if(!fabric.ok)return fabric;
-    const ram=await readSettings();
-    const profile=await prepareProfile({
-      minecraftRoot:path.join(app.getPath('appData'),'.minecraft'),
-      gameDir:getGameDirectory(),ramGb:ram.ramGb,preferForPlay:true
-    });
-    if(!profile.ok)return profile;
-    const launched=await openOfficialLauncher();
-    return {ok:true,code:'launcher_open_requested',profileName:profile.profileName,versionId:profile.versionId,
-      profileFile:profile.profileFile,gameDir:profile.gameDir,ramGb:ram.ramGb,requested:launched.requested,
-      message:'La Familia – Piraten Update ist eingerichtet (Fabric 1.21.1 / Loader 0.19.5). Der offizielle Minecraft Launcher wird geöffnet. Dort bitte die Installation „La Familia – Piraten Update“ auswählen und auf „Spielen“ klicken.'};
-  });
+  ipcMain.handle('game:get-start-state',event=>{getTrustedWindow(event);return gameStartController.getState();});
+  ipcMain.handle('game:launch-official',async event=>{getTrustedWindow(event);return gameStartController.start();});
   ipcMain.handle('game:open-folder', async (event) => {
     getTrustedWindow(event);
     const folder = getGameDirectory();
