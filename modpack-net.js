@@ -19,6 +19,15 @@ function trustedTransport(url,first){
   }
   return u;
 }
+function requestHeaders(url){
+  // GitHub REST benötigt JSON-Medientyp; herunterladbare Release-Assets sind dagegen Binärdaten.
+  const api=new URL(url).hostname==='api.github.com';
+  return {
+    'User-Agent':'LaFamilia-Launcher/1.3.5',
+    'Accept':api?'application/vnd.github+json':'application/octet-stream',
+    ...(api?{'X-GitHub-Api-Version':'2022-11-28'}:{})
+  };
+}
 function requestStream(url,{signal,timeoutMs=45000,maxRedirects=6}={}){
   return new Promise((resolve,reject)=>{
     let finished=false;
@@ -26,7 +35,7 @@ function requestStream(url,{signal,timeoutMs=45000,maxRedirects=6}={}){
     const attempt=(address,redirects)=>{
       let target;
       try{target=trustedTransport(address,redirects===0);}catch(error){finish(error);return;}
-      const req=https.get(target,{headers:{'User-Agent':'LaFamilia-Launcher/1.3.5','Accept':'application/octet-stream'}},res=>{
+      const req=https.get(target,{headers:requestHeaders(target.toString())},res=>{
         const status=res.statusCode||0;
         if([301,302,303,307,308].includes(status)){
           const next=res.headers.location;
@@ -38,7 +47,7 @@ function requestStream(url,{signal,timeoutMs=45000,maxRedirects=6}={}){
           return;
         }
         if(status!==200){
-          res.resume();finish(Error('GitHub HTTP '+status+' beim Modpack-Download.'));return;
+          res.resume();finish(Error('GitHub HTTP '+status+' beim '+(target.hostname==='api.github.com'?'Abruf der Release-Informationen':'Download einer Release-Datei')+'.'));return;
         }
         finish(null,res);
       });
@@ -108,4 +117,4 @@ async function downloadVerified(asset,cacheDir,{signal,onProgress}={}){
     return destination;
   }catch(error){await fs.rm(temp,{force:true}).catch(()=>{});throw error;}
 }
-module.exports={trustedTransport,requestStream,getBuffer,getLatestManifest,downloadVerified};
+module.exports={trustedTransport,requestHeaders,requestStream,getBuffer,getLatestManifest,downloadVerified};

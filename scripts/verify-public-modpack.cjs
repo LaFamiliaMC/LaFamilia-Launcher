@@ -1,0 +1,18 @@
+'use strict';
+/* GitHub CI: reale Release-Manifestdatei ohne Spiel-Dateiänderungen gegen Launcherformat prüfen. */
+const fs=require('node:fs');
+const path=require('node:path');
+const {normalizeManifest}=require('../modpack-core');
+const filename=process.argv[2];
+if(!filename)throw Error('Pfad zum heruntergeladenen Manifest fehlt.');
+const input=JSON.parse(fs.readFileSync(filename,'utf8'));
+console.log('Veröffentlichtes Modpack-Manifest:',filename);
+console.log('Top-Level-Felder:',Object.keys(input).join(', '));
+console.log('Erster Mod-Eintrag:',JSON.stringify((input.mods||[])[0]||{}).slice(0,800));
+console.log('Resourcepacks-Felder:',Object.keys(input.resourcepacks||{}).join(', '));
+console.log('Config-Felder:',Object.keys(input.config||{}).join(', '));
+const m=normalizeManifest(input);
+if(m.mods.length!==301)throw Error('Erwartete 301 Mod-Dateien, erhalten: '+m.mods.length);
+if(m.resourcepacks.files.length!==24)throw Error('Erwartete 24 Resourcepack-Dateien, erhalten: '+m.resourcepacks.files.length);
+if(m.config.files.length!==621)throw Error('Erwartete 621 Config-Dateien, erhalten: '+m.config.files.length);
+console.log('Erfolgreich: Manifest V'+m.schemaVersion+' / Modpack '+m.version+' / '+m.mods.length+' Mods / '+m.resourcepacks.files.length+' Resourcepacks / '+m.config.files.length+' Configs');

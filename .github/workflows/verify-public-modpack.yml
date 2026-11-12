@@ -1,0 +1,34 @@
+name: La Familia Modpack – reales Release-Manifest prüfen
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'modpack-*.js'
+      - 'tests/modpack.test.cjs'
+      - 'scripts/verify-public-modpack.cjs'
+      - '.github/workflows/verify-public-modpack.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check-real-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Dependencies
+        run: npm install --no-audit --no-fund
+      - name: Download published manifest.json from Modpack v1.0.0
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p .modpack-smoke
+          gh release download modpack-v1.0.0 --repo LaFamiliaMC/LaFamilia-Modpack --pattern manifest.json --dir .modpack-smoke
+      - name: Check real manifest against launcher V1.3.5 parser
+        run: node scripts/verify-public-modpack.cjs .modpack-smoke/manifest.json
+      - name: Run unit tests
+        run: npm test

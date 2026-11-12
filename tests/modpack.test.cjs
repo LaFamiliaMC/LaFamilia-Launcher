@@ -155,3 +155,9 @@ test('Abgebrochene Installation stellt bestehende verwaltete Mod wieder her',asy
   await assert.rejects(fs.stat(path.join(game,'mods','new.jar')),{code:'ENOENT'});
   await assert.rejects(fs.stat(path.join(userData,'modpack-transaction.json')),{code:'ENOENT'});
 });
+
+test('GitHub-API wird als JSON und Release-Dateien als Binärdaten angefragt',()=>{
+  const {requestHeaders}=require('../modpack-net');
+  assert.equal(requestHeaders('https://api.github.com/repos/LaFamiliaMC/LaFamilia-Modpack/releases/latest').Accept,'application/vnd.github+json');
+  assert.equal(requestHeaders(BASE+'manifest.json').Accept,'application/octet-stream');
+});
