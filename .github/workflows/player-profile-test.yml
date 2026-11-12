@@ -1,0 +1,48 @@
+name: Spielerprofil – Windows integration test
+
+on:
+  push:
+    branches: [feature/echtes-spielerprofil]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-profile:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Check local skinview3d bundle exists
+        shell: pwsh
+        run: |
+          if (-not (Test-Path 'node_modules/skinview3d/bundles/skinview3d.bundle.min.js')) {
+            throw '3D-Skinviewer fehlt im lokalen npm-Paket.'
+          }
+      - name: Syntax checks
+        run: npm run check
+      - name: All JavaScript unit tests
+        run: npm test
+      - name: Build test Windows installer without publishing
+        run: npm run dist:win
+      - name: Verify bundled player profile and 3D library
+        shell: pwsh
+        run: |
+          $asar = 'dist/win-unpacked/resources/app.asar'
+          if (-not (Test-Path $asar)) { throw 'app.asar fehlt.' }
+          $list = npx --no-install asar list $asar
+          if ($LASTEXITCODE -ne 0) { throw 'ASAR Paket konnte nicht geprüft werden.' }
+          foreach ($expected in @('player-profile.js', 'player-profile-ui.js', 'player-profile.css', 'skinview3d.bundle.min.js')) {
+            if (-not ($list -match [regex]::Escape($expected))) { throw "Datei fehlt in Windows-EXE: $expected" }
+          }
+      - name: Save the test setup
+        uses: actions/upload-artifact@v4
+        with:
+          name: LaFamilia-Profil-Test-Windows
+          path: dist/LaFamilia-Setup-*.exe
+          if-no-files-found: error
