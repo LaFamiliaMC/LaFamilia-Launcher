@@ -75,8 +75,10 @@ document.addEventListener('DOMContentLoaded', () => {
     target.addEventListener('animationend', () => target.classList.remove('page-entering'), { once: true });
     activePage = pageName;
 
-    for (const button of navigationButtons) {
-      const selected = button.dataset.page === pageName;
+    document.addEventListener('lafamilia:navigate', event => switchPage(event.detail?.page));
+
+  for (const button of navigationButtons) {
+      const selected = button.dataset.page === pageName || (pageName === 'server' && button.dataset.page === 'settings');
       button.classList.toggle('active', selected);
       if (selected) button.setAttribute('aria-current', 'page');
       else button.removeAttribute('aria-current');
@@ -179,6 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <p id="system-memory">Gesamter RAM: wird ermittelt …</p>
           <button type="button" id="btn-open-game-folder" class="feature-button">Spielordner öffnen</button>
           <button type="button" id="btn-toggle-fullscreen" class="feature-button" title="Auch mit F11 umschaltbar">Vollbild einschalten (F11)</button>
+          <button type="button" id="btn-server-settings" class="feature-button">Serverstatus &amp; Adresse</button>
           <button type="button" id="btn-check-launcher-updates" class="feature-button">Launcher-Update prüfen</button>
           <p id="settings-update-status" role="status" aria-live="polite"></p>
           <p id="folder-status" role="status" aria-live="polite"></p>

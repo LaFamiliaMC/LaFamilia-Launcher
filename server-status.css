@@ -1,0 +1,19 @@
+/* V1.3.2 – Live-Status innerhalb der bestehenden La-Familia-Grafik. */
+#widget-friends #friends-status{top:30%;font-weight:700;}
+#widget-friends #friends-status.server-online{color:#a7f762;opacity:1;}
+#widget-friends #friends-status.server-offline{color:#ffc38d;opacity:1;}
+#server-home-details{position:absolute;left:5%;top:43%;width:90%;height:34%;color:#f7df9c;font-size:10px;text-shadow:1px 1px 2px #000;line-height:1.4;pointer-events:none;}
+#server-home-details span{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+#server-home-details #server-home-ping{float:right;margin-top:-14px;}
+#server-home-details #server-home-version{clear:both;}
+#server-home-details #btn-server-details{position:absolute;left:0;top:46px;pointer-events:auto;padding:0;color:#f8de9d;border:0;background:transparent;font:700 10px Cinzel,Georgia,serif;text-shadow:1px 1px #000;}
+#server-home-details #btn-server-details:hover{color:#fff8d2;text-decoration:underline;}
+.secondary-page .server-page-columns{display:grid;grid-template-columns:1fr 1fr;gap:15px;height:100%;}
+.secondary-page .server-page-columns .detail-panel{gap:4px;padding:20px 16px;}
+.secondary-page .server-page-columns .detail-panel>p{margin:0 0 5px;font-size:11px;line-height:1.4;}
+.secondary-page .server-page-columns .detail-panel>.panel-explanation{margin-bottom:8px;}
+.secondary-page .server-page-columns #server-address-input{width:100%;padding:8px 7px;font:12px Consolas,monospace;color:#39210a;background:#f6e5b5;border:1px solid #a17a2e;}
+.secondary-page .server-page-columns .feature-button{margin-top:auto;}
+.secondary-page .server-error{color:#8e3319;overflow-wrap:anywhere;}
+.secondary-page #server-save-feedback{color:#356517;overflow-wrap:anywhere;}
+.secondary-page .server-help{overflow-wrap:anywhere;}

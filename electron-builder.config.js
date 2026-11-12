@@ -17,7 +17,7 @@ module.exports = {
   asar: true,
   directories: { output: 'dist', buildResources: 'build' },
   files: [
-    'main.js', 'preload.js', 'renderer.js', 'updater.js',
+    'main.js', 'preload.js', 'renderer.js', 'updater.js', 'server-status.js', 'server-ui.js', 'server-status.css', 'config/**/*',
     'index.html', 'style.css', 'package.json', 'assets/**/*'
   ],
   win: {

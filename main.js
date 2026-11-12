@@ -7,9 +7,13 @@ const path = require('node:path');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const { createUpdaterController } = require('./updater');
+const { parseAddress, queryJavaStatus } = require('./server-status');
 
 let mainWindow;
 let updatesController;
+let serverRefreshInterval;
+let serverCheckPromise;
+let serverSnapshot = {phase:'checking',online:false,address:'23.88.65.87:25565',playersOnline:null,playersMax:null,pingMs:null,version:null,checkedAt:null,error:null};
 
 function getGameDirectory() {
   return path.join(app.getPath('appData'), '.minecraft', 'la-familia');
@@ -52,6 +56,61 @@ async function saveRamSetting(ramGb) {
   return { ramGb };
 }
 
+
+
+function getServerConfigFile() {
+  return path.join(app.getPath('userData'), 'server.json');
+}
+async function loadServerAddress() {
+  for (const file of [getServerConfigFile(),path.join(__dirname,'config','server.json')]) {
+    try {
+      const data=JSON.parse(await fs.readFile(file,'utf8'));
+      const value=typeof data.address==='string'?data.address.trim():'';
+      return value?parseAddress(value).address:'';
+    }catch(error){
+      if(error.code==='ENOENT')continue;
+      return '';
+    }
+  }
+  return '';
+}
+function emitServerStatus(fields) {
+  serverSnapshot={...serverSnapshot,...fields};
+  if(mainWindow && !mainWindow.isDestroyed() && !mainWindow.webContents.isDestroyed()){
+    mainWindow.webContents.send('server:status',{...serverSnapshot});
+  }
+  return {...serverSnapshot};
+}
+async function refreshServerStatus() {
+  if(serverCheckPromise)return serverCheckPromise;
+  serverCheckPromise=(async()=>{
+    const address=await loadServerAddress();
+    if(!address)return emitServerStatus({phase:'unconfigured',online:false,address:'',playersOnline:null,playersMax:null,pingMs:null,version:null,checkedAt:null,error:null});
+    emitServerStatus({phase:'checking',address,error:null});
+    try{
+      const state=await queryJavaStatus(address,{timeoutMs:5000});
+      return emitServerStatus({...state,address,checkedAt:new Date().toISOString(),error:null});
+    }catch(error){
+      return emitServerStatus({phase:'offline',online:false,address,playersOnline:null,playersMax:null,pingMs:null,version:null,checkedAt:new Date().toISOString(),error:String(error.message||error).slice(0,160)});
+    }
+  })();
+  try{return await serverCheckPromise;}finally{serverCheckPromise=null;}
+}
+async function saveServerAddress(value){
+  if(typeof value!=='string')throw new Error('Ungültige Serveradresse.');
+  const address=value.trim()?parseAddress(value).address:'';
+  const file=getServerConfigFile();
+  await fs.mkdir(path.dirname(file),{recursive:true});
+  const temp=file+'.'+process.pid+'.tmp';
+  try{
+    await fs.writeFile(temp,JSON.stringify({address},null,2),'utf8');
+    await fs.rename(temp,file);
+  }catch(error){
+    await fs.rm(temp,{force:true}).catch(()=>{});
+    throw error;
+  }
+  return {address};
+}
 
 function getTrustedWindow(event) {
   const senderWindow = BrowserWindow.fromWebContents(event.sender);
@@ -141,13 +200,20 @@ function createWindow() {
     });
     updatesController.initialize();
     void updatesController.check();
+    void refreshServerStatus();
+    if (serverRefreshInterval) clearInterval(serverRefreshInterval);
+    serverRefreshInterval = setInterval(() => { void refreshServerStatus(); }, 30000);
   });
   mainWindow.on('maximize', () => sendWindowState(mainWindow));
   mainWindow.on('unmaximize', () => sendWindowState(mainWindow));
   mainWindow.on('enter-full-screen', () => sendWindowState(mainWindow));
   mainWindow.on('leave-full-screen', () => sendWindowState(mainWindow));
   mainWindow.on('restore', () => sendWindowState(mainWindow));
-  mainWindow.on('closed', () => { mainWindow = null; });
+  mainWindow.on('closed', () => {
+    if (serverRefreshInterval) clearInterval(serverRefreshInterval);
+    serverRefreshInterval = null;
+    mainWindow = null;
+  });
 
   // F11 oder Alt+Enter: echtes Vollbild, auch bei rahmenlosem Electron-Fenster.
   mainWindow.webContents.on('before-input-event', (event, input) => {
@@ -177,6 +243,27 @@ app.whenReady().then(() => {
   ipcMain.handle('updates:install', (event) => {
     getTrustedWindow(event);
     return updatesController ? updatesController.install() : { ok: false, reason: 'Kein Update bereit' };
+  });
+
+
+  ipcMain.handle('server:get-status', event => {
+    getTrustedWindow(event);
+    return {...serverSnapshot};
+  });
+  ipcMain.handle('server:get-address', async event => {
+    getTrustedWindow(event);
+    return {address:await loadServerAddress()};
+  });
+  ipcMain.handle('server:refresh', async event => {
+    getTrustedWindow(event);
+    return refreshServerStatus();
+  });
+  ipcMain.handle('server:save-address', async (event,address) => {
+    getTrustedWindow(event);
+    if(serverCheckPromise)await serverCheckPromise;
+    const saved=await saveServerAddress(address);
+    await refreshServerStatus();
+    return saved;
   });
 
   ipcMain.handle('window:minimize', (event) => getTrustedWindow(event).minimize());

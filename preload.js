@@ -14,6 +14,16 @@ contextBridge.exposeInMainWorld('laFamilia', {
   loadSettings: () => ipcRenderer.invoke('settings:load'),
   saveRam: (ramGb) => ipcRenderer.invoke('settings:save-ram', ramGb),
   openGameFolder: () => ipcRenderer.invoke('game:open-folder'),
+  getServerStatus: () => ipcRenderer.invoke('server:get-status'),
+  refreshServerStatus: () => ipcRenderer.invoke('server:refresh'),
+  getServerAddress: () => ipcRenderer.invoke('server:get-address'),
+  saveServerAddress: address => ipcRenderer.invoke('server:save-address',address),
+  onServerStatusChange: callback => {
+    if (typeof callback !== 'function') return () => {};
+    const listener = (_event,value) => callback(value);
+    ipcRenderer.on('server:status',listener);
+    return () => ipcRenderer.removeListener('server:status',listener);
+  },
   getUpdateStatus: () => ipcRenderer.invoke('updates:get-state'),
   checkForUpdates: () => ipcRenderer.invoke('updates:check'),
   installUpdate: () => ipcRenderer.invoke('updates:install'),
