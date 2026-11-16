@@ -28,6 +28,7 @@ public final class LaFamiliaServerMetrics implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        PlayerStatsApi.registerCommands();
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             final long now = System.nanoTime();
             synchronized (LOCK) {
@@ -39,7 +40,7 @@ public final class LaFamiliaServerMetrics implements ModInitializer {
             startedMillis = System.currentTimeMillis();
             synchronized (LOCK) { TICKS.clear(); }
             try {
-                startServer();
+                startServer(server);
             } catch (Exception error) {
                 System.err.println("[La Familia Metrics] HTTP-Server konnte nicht gestartet werden: " + error);
             }
@@ -48,16 +49,18 @@ public final class LaFamiliaServerMetrics implements ModInitializer {
             final HttpServer instance = http;
             http = null;
             if (instance != null) instance.stop(0);
+            PlayerStatsApi.stop();
             startedMillis = 0;
             synchronized (LOCK) { TICKS.clear(); }
         });
     }
 
-    private static void startServer() throws IOException {
+    private static void startServer(net.minecraft.server.MinecraftServer server) throws IOException {
         Path file = FabricLoader.getInstance().getConfigDir().resolve("lafamilia-servermetrics.properties");
         Properties props = new Properties();
         props.setProperty("bind", "127.0.0.1");
         props.setProperty("port", "25566");
+        props.setProperty("stats.enabled", "true");
         if (Files.exists(file)) {
             try (var input = Files.newInputStream(file)) { props.load(input); }
         } else {
@@ -71,6 +74,7 @@ public final class LaFamiliaServerMetrics implements ModInitializer {
         String bind = props.getProperty("bind", "127.0.0.1").trim();
         HttpServer instance = HttpServer.create(new InetSocketAddress(bind, port), 0);
         instance.createContext("/status", LaFamiliaServerMetrics::respond);
+        PlayerStatsApi.start(server, instance, Boolean.parseBoolean(props.getProperty("stats.enabled", "true")));
         instance.setExecutor(Executors.newSingleThreadExecutor(r -> {
             Thread thread = new Thread(r, "LaFamilia-Metrics-HTTP");
             thread.setDaemon(true);
