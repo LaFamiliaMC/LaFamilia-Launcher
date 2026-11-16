@@ -16,6 +16,7 @@ const { ensureFabric } = require('./fabric-auto-install');
 const { createGameStartController } = require('./game-start');
 const { launcherProcessRunning } = require('./minecraft-launch');
 const { createPlayerProfileController } = require('./player-profile');
+const { createPlayerStatsController } = require('./player-stats');
 
 const firstInstance = app.requestSingleInstanceLock();
 if(!firstInstance) app.quit();
@@ -33,6 +34,7 @@ let newsController;
 let modpackManager;
 let gameStartController;
 let playerProfileController;
+let playerStatsController;
 let fabricInstallPromise=null;
 let fabricStatus={phase:'idle',message:'Fabric Loader wird bei Bedarf automatisch installiert.'};
 let serverCheckPromise;
@@ -332,6 +334,9 @@ if(firstInstance)app.whenReady().then(() => {
     localAppData:process.env.LOCALAPPDATA,
     choiceFile:path.join(app.getPath('userData'),'player-profile-choice.json')
   });
+  playerStatsController=createPlayerStatsController({
+    file:path.join(app.getPath('userData'),'player-stats-link.json')
+  });
   gameStartController=createGameStartController({
     modpackManager,readInstalledMods,installFabricIfNeeded,readSettings,
     prepareProfile:ramGb=>prepareProfile({
@@ -473,6 +478,18 @@ if(firstInstance)app.whenReady().then(() => {
   ipcMain.handle('player:choose-name',async (event,name)=>{
     getTrustedWindow(event);
     return playerProfileController.chooseName(name);
+  });
+  ipcMain.handle('player-stats:config',async event=>{
+    getTrustedWindow(event);return playerStatsController.info();
+  });
+  ipcMain.handle('player-stats:connect',async (event,input)=>{
+    getTrustedWindow(event);return playerStatsController.connect(input);
+  });
+  ipcMain.handle('player-stats:disconnect',async event=>{
+    getTrustedWindow(event);return playerStatsController.disconnect();
+  });
+  ipcMain.handle('player-stats:get',async (event,uuid)=>{
+    getTrustedWindow(event);return playerStatsController.getStats(uuid);
   });
   ipcMain.handle('game:get-start-state',event=>{getTrustedWindow(event);return gameStartController.getState();});
   ipcMain.handle('game:launch-official',async event=>{getTrustedWindow(event);return gameStartController.start();});
