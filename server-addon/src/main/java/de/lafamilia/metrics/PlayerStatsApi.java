@@ -67,11 +67,12 @@ public final class PlayerStatsApi {
                     String token = Base64.getUrlEncoder().withoutPadding().encodeToString(secret);
                     UUID uuid = player.getUuid();
                     synchronized (LOCK) {
-                        TOKEN_HASHES.put(uuid, sha256(token));
+                        String previous = TOKEN_HASHES.put(uuid, sha256(token));
                         try {
                             persist();
                         } catch (IOException error) {
-                            TOKEN_HASHES.remove(uuid);
+                            if (previous == null) TOKEN_HASHES.remove(uuid);
+                            else TOKEN_HASHES.put(uuid, previous);
                             ctx.getSource().sendError(Text.literal("Verbindungsschlüssel konnte nicht gespeichert werden."));
                             return 0;
                         }
