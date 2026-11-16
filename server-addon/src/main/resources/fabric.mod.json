@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "id": "lafamilia_servermetrics",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "name": "La Familia Server Metrics",
-  "description": "Sendet echte TPS und Laufzeit an den La Familia Launcher.",
+  "description": "Sendet echte TPS, Laufzeit und geschützte Spielerstatistiken an den La Familia Launcher.",
   "environment": "server",
   "entrypoints": {
     "main": [
