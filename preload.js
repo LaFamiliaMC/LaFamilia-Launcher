@@ -29,6 +29,10 @@ contextBridge.exposeInMainWorld('laFamilia', {
   getPlayerProfile: () => ipcRenderer.invoke('player:get-profile'),
   refreshPlayerProfile: () => ipcRenderer.invoke('player:refresh-profile'),
   choosePlayerName: name => ipcRenderer.invoke('player:choose-name',name),
+  getPlayerStatsConfig: () => ipcRenderer.invoke('player-stats:config'),
+  connectPlayerStats: config => ipcRenderer.invoke('player-stats:connect',config),
+  disconnectPlayerStats: () => ipcRenderer.invoke('player-stats:disconnect'),
+  getPlayerStats: uuid => ipcRenderer.invoke('player-stats:get',uuid),
   getGameStartStatus: () => ipcRenderer.invoke('game:get-start-state'),
   onGameStartStatusChange: callback => {
     if(typeof callback!=='function')return ()=>{};
