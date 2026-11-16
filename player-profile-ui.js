@@ -115,6 +115,9 @@ document.addEventListener('DOMContentLoaded',()=>{
     byId('lf-profile-model').textContent=profile.skinData?(profile.model==='slim'?'Schmale Arme (Alex)':'Klassisch (Steve)'):'—';
     byId('lf-profile-cape').textContent=profile.hasCape?'Ja – echtes Minecraft-Cape':'Kein Cape im Profil';
     updateStatsPlaceholder();
+    document.dispatchEvent(new CustomEvent('lafamilia:profile-changed',{
+      detail:{uuid:profile.uuid||null,name:profile.name||null}
+    }));
   }
   async function loadProfile(force=false){
     if(!api?.getPlayerProfile){
