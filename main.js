@@ -18,6 +18,7 @@ const { createGameStartController } = require('./game-start');
 const { launcherProcessRunning } = require('./minecraft-launch');
 const { createPlayerProfileController } = require('./player-profile');
 const { createPlayerStatsController } = require('./player-stats');
+const { checkWorldMap, MAP_URL } = require('./worldmap');
 
 const firstInstance = app.requestSingleInstanceLock();
 if(!firstInstance) app.quit();
@@ -391,6 +392,16 @@ if(firstInstance)app.whenReady().then(() => {
   });
   ipcMain.handle('server:save-metrics-url',async(event,url)=>{
     getTrustedWindow(event);const saved=await saveMetricsUrl(url);await refreshServerStatus();return saved;
+  });
+  ipcMain.handle('worldmap:check',async event=>{
+    getTrustedWindow(event);
+    return checkWorldMap();
+  });
+  ipcMain.handle('worldmap:open',async event=>{
+    getTrustedWindow(event);
+    // Ausschließlich die feste, sichere La Familia BlueMap-Adresse öffnen.
+    await shell.openExternal(MAP_URL);
+    return {ok:true};
   });
   ipcMain.handle('server:get-status', event => {
     getTrustedWindow(event);
