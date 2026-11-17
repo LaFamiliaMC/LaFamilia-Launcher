@@ -9,6 +9,7 @@ const os = require('node:os');
 const { createUpdaterController } = require('./updater');
 const { parseAddress, queryJavaStatus } = require('./server-status');
 const { queryServerMetrics, validateMetricsUrl } = require('./server-metrics');
+const { resolveMetricsUrl } = require('./server-metrics-config');
 const { createNewsController } = require('./news-feed');
 const { createModpackManager } = require('./modpack-manager');
 const { prepareProfile, openOfficialLauncher, FABRIC_HELP_URL } = require('./minecraft-launch');
@@ -128,15 +129,17 @@ async function loadServerAddress() {
   return '';
 }
 async function loadMetricsUrl(){
-  for(const file of [path.join(app.getPath('userData'),'metrics.json'),path.join(__dirname,'config','server.json')]){
-    try{
-      const o=JSON.parse(await fs.readFile(file,'utf8'));
-      const value=typeof o.url==='string'?o.url:o.metricsUrl;
-      if(value==='')return '';
-      if(typeof value==='string')return validateMetricsUrl(value);
-    }catch(e){if(e.code==='ENOENT')continue;return '';}
+  // Die offizielle La-Familia-Adresse wird automatisch per HTTPS abgefragt.
+  // Eine alte gespeicherte HTTP-Adresse darf den reparierten Endpunkt nicht übersteuern.
+  let storedUrl=null;
+  try {
+    const data=JSON.parse(await fs.readFile(path.join(app.getPath('userData'),'metrics.json'),'utf8'));
+    storedUrl=typeof data.url==='string'?data.url:data.metricsUrl;
+  }catch(error){
+    // Fehlende oder beschädigte alte Einstellungen blockieren den automatischen Abruf nicht.
+    if(error.code!=='ENOENT' && !(error instanceof SyntaxError))throw error;
   }
-  return '';
+  return resolveMetricsUrl(await loadServerAddress(),storedUrl);
 }
 async function saveMetricsUrl(value){
   if(typeof value!=='string')throw Error('Ungültige Metrik-Adresse.');
