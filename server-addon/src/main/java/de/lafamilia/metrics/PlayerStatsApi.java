@@ -184,6 +184,8 @@ public final class PlayerStatsApi {
             URI uri = exchange.getRequestURI();
             if (uri.getRawQuery() != null) { send(exchange, 400, "{\"error\":\"query_not_allowed\"}"); return; }
             String name = uri.getPath().substring("/player/".length());
+            boolean achievements = name.endsWith("/advancements");
+            if (achievements) name = name.substring(0, name.length() - "/advancements".length());
             if (!name.matches("[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}")) {
                 send(exchange, 400, "{\"error\":\"invalid_uuid\"}"); return;
             }
@@ -194,6 +196,18 @@ public final class PlayerStatsApi {
                 return;
             }
             MinecraftServer server = minecraftServer;
+            // Auch abgeschlossene Advancements benutzen denselben UUID-gebundenen
+            // Bearer-Schlüssel; /status und bisherige /player/<UUID> bleiben unverändert.
+            if (achievements) {
+                CompletableFuture<JsonObject> results = new CompletableFuture<>();
+                server.execute(() -> {
+                    try { results.complete(PlayerAchievementsApi.read(server, uuid)); }
+                    catch (Exception error) { results.completeExceptionally(error); }
+                });
+                try { send(exchange, 200, results.get(3, TimeUnit.SECONDS).toString()); }
+                catch (Exception error) { send(exchange, 503, "{\\"error\\":\\"advancements_unavailable\\"}"); }
+                return;
+            }
             CompletableFuture<Snapshot> live = new CompletableFuture<>();
             server.execute(() -> {
                 try { live.complete(readOnline(server, uuid)); }
