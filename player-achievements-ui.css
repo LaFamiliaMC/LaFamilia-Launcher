@@ -1,0 +1,150 @@
+/* Erfolge – ausschließlich im vorhandenen mittleren La-Familia-Profilrahmen. */
+#lf-profile-achievements.lf-achievements-container{
+  box-sizing:border-box;
+  height:100%;
+  max-height:100%;
+  min-height:0;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  padding:7px 13px 8px;
+  font:11px/1.35 Georgia,serif;
+}
+#lf-profile-achievements .lf-achievements-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex:0 0 auto;
+  gap:9px;
+}
+#lf-profile-achievements .lf-achievements-header h4{
+  margin:0;
+  color:#ffe19b;
+  font:700 15px Cinzel,Georgia,serif;
+}
+#lf-profile-achievements .lf-achievements-header .feature-button{
+  min-height:25px;
+  padding:4px 8px;
+  font-size:10px;
+}
+#lf-profile-achievements .lf-achievements-summary{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+  flex:0 0 auto;
+  margin:10px 0 6px;
+}
+#lf-profile-achievements .lf-achievements-summary > div{
+  padding:7px 10px;
+  background:rgba(48,25,10,.53);
+  border:1px solid rgba(213,171,92,.5);
+  border-radius:5px;
+}
+#lf-profile-achievements .lf-achievements-summary span{
+  display:block;
+  color:#e9c98d;
+  font:11px Georgia,serif;
+}
+#lf-profile-achievements .lf-achievements-summary strong{
+  color:#ffe6a6;
+  display:block;
+  font:700 16px Cinzel,Georgia,serif;
+  margin-top:3px;
+}
+#lf-profile-achievements #lf-achievements-state{
+  flex:0 0 auto;
+  max-width:none;
+  min-height:18px;
+  margin:3px 0 8px;
+  color:#efd4a0;
+  font:11px/1.45 Georgia,serif;
+}
+#lf-profile-achievements .lf-achievements-subheading{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex:0 0 auto;
+  margin-bottom:6px;
+}
+#lf-profile-achievements .lf-achievements-subheading h5{
+  font:700 12px Cinzel,Georgia,serif;
+  color:#ffdc91;
+  margin:0;
+}
+#lf-profile-achievements #lf-achievements-list-caption{
+  font:10px Georgia,serif;
+  color:#c9a972;
+}
+#lf-profile-achievements .lf-achievements-list{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding-right:4px;
+}
+#lf-profile-achievements .lf-achievement{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:5px;
+  padding:6px 8px;
+  background:rgba(45,22,10,.56);
+  border:1px solid rgba(208,166,91,.3);
+  border-radius:4px;
+}
+#lf-profile-achievements .lf-achievement-icon{
+  flex:0 0 18px;
+  color:#e7b85d;
+  font-size:18px;
+  text-shadow:0 0 4px rgba(240,199,111,.7);
+}
+#lf-profile-achievements .lf-achievement-info{
+  min-width:0;
+  flex:1 1 auto;
+}
+#lf-profile-achievements .lf-achievement-info strong{
+  display:block;
+  color:#ffebbb;
+  font:700 12px Georgia,serif;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+#lf-profile-achievements .lf-achievement-info small{
+  display:block;
+  color:#c9b28d;
+  font:9px Georgia,serif;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  margin-top:2px;
+}
+#lf-profile-achievements .lf-achievements-empty{
+  margin:5px 0 0;
+  color:#dcc39c;
+  font:11px Georgia,serif;
+}
+#lf-profile-achievements .lf-achievements-quest-note{
+  flex:0 0 auto;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  margin-top:6px;
+  padding:7px 8px;
+  border-top:1px solid rgba(222,170,87,.45);
+  background:rgba(33,16,8,.28);
+}
+#lf-profile-achievements .lf-achievements-quest-note strong{
+  color:#f4d796;
+  font:700 10px Cinzel,Georgia,serif;
+}
+#lf-profile-achievements .lf-achievements-quest-note span{
+  color:#d6b990;
+  font:10px/1.3 Georgia,serif;
+}
+#lf-profile-achievements .lf-achievements-list::-webkit-scrollbar{width:5px;}
+#lf-profile-achievements .lf-achievements-list::-webkit-scrollbar-thumb{
+  background:#9a6b2c;
+  border-radius:5px;
+}
