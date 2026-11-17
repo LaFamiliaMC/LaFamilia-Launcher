@@ -2,11 +2,40 @@
   "schema": 1,
   "news": [
     {
-      "id": "willkommen-2026-11-12",
-      "date": "2026-11-12",
-      "title": "Willkommen im La Familia Logbuch",
-      "body": "Hier erscheinen künftig Neuigkeiten aus unserer Minecraft-Welt: Events, Quests, Serverwartungen und Ankündigungen. Alle Meldungen kommen direkt von GitHub – ohne erneute Launcher-Installation.",
-      "image": ""
+      "id": "lafamilia-logbuch-projektstand-2026-11-17",
+      "date": "2026-11-17",
+      "title": "La Familia Logbuch – Was wir bisher geschafft haben",
+      "pinned": true,
+      "visible": true,
+      "image": "",
+      "body": "AHOI, SEELEUTE! Unser Piratenabenteuer auf Minecraft Fabric 1.21.1 nimmt immer mehr Gestalt an. Hier ist der aktuelle Stand unserer gemeinsamen Arbeit.\n\nDER LA FAMILIA LAUNCHER\n✓ Unser eigener Piraten-Launcher für Windows ist einsatzbereit – mit Holz- und Goldoptik, Spielerprofil und eigener Navigation.\n✓ Launcher-Updates werden über GitHub veröffentlicht und automatisch geprüft.\n✓ Das Modpack mit rund 301 Mods kann über den Launcher geprüft, installiert und aktualisiert werden. Eigene Konfigurationen werden dabei geschützt.\n✓ Fabric 1.21.1 und der passende Loader werden beim Einrichten des Spielprofils unterstützt; der Spielstart führt bequem über den offiziellen Minecraft-Launcher.\n✓ Der Serverstatus zeigt Spielerzahl, Ping und Version. Echte TPS und Serverlaufzeit erreichen uns inzwischen zuverlässig über die sichere HTTPS-Verbindung.\n✓ Minecraft-Skins und das Spielerprofil sind angebunden. Persönliche Serverstatistiken sind per Spielerschlüssel geschützt.\n✓ Die neue Erfolgsansicht und die Weltkarten-Seite sind im Launcher vorbereitet. Für die echten Erfolge wird die neue Servermod benötigt; die Weltkarte braucht noch den BlueMap-Webserver.\n\nUNSER MINECRAFT-SERVER\n✓ Der Piratenserver mit Fabric 1.21.1 ist die Grundlage für unsere Abenteuer.\n✓ Händler und NPC-Handel mit MiguelEconomy wurden ausgebaut, einschließlich Kaufen und Verkaufen in Stapeln.\n✓ Lunchtime Cookbook mit Kochbuch, Rezepten und Kochbuchständer wurde für Fabric umgesetzt und erfolgreich getestet.\n✓ La Familia Pets, die Haustierverwaltung und unsere besonderen Katzen haben bereits funktionierende Grundlagen.\n✓ Die Piratenlobby, ihre Händler, Quests und die geplante Reise in die Spielwelt wachsen Stück für Stück zusammen.\n\nWAS NOCH AUF UNSERER WERFT LIEGT\n• Die echte Live-Weltkarte: BlueMap und die Verbindung zum Kartenserver müssen noch fertig eingerichtet werden.\n• Nether- und End-Portal: Spenden und Freischaltung wurden vorbereitet; die zuverlässige Portal-Erzeugung wird weiter repariert.\n• Die vollständige FTB-Questreihe, Piratenränge und die Anzeige abgeschlossener FTB-Quests im Launcher sind noch im Ausbau.\n\nDanke an alle, die La Familia begleiten. Wir bauen hier nicht einfach nur einen Server – wir erschaffen gemeinsam eine eigene Piratenwelt. Volle Fahrt voraus!"
+    },
+    {
+      "id": "zz-danke-an-unsere-crew-2026-11-17",
+      "date": "2026-11-17",
+      "title": "Ein riesiges Dankeschön an Sivia, Celine, Chantal und Sven",
+      "pinned": false,
+      "visible": true,
+      "image": "",
+      "body": "AHOI, IHR VIER!\n\nEin ganz besonderes Dankeschön geht an Sivia, Celine, Chantal und Sven.\n\nDanke für eure Geduld, eure Hilfe und dafür, dass ihr bei all den Tests, Änderungen und kleinen Rückschlägen nicht aufgegeben habt. Nicht alles hat immer beim ersten Versuch funktioniert – umso schöner ist es, wie viel wir inzwischen gemeinsam geschafft haben.\n\nIhr seid ein wichtiger Teil von La Familia und unserer Piratencrew. Eure Unterstützung bedeutet uns sehr viel!\n\nAuf viele weitere gemeinsame Abenteuer, spannende Quests und unvergessliche Stunden auf unserem Server.\n\nEure La Familia Crew ⚓"
+    },
+    {
+      "id": "serverfortschritte-haendler-pets-kochbuch-2026-11-17",
+      "date": "2026-11-17",
+      "title": "Aus dem Piratenhafen: Händler, Haustiere und Kochkunst",
+      "pinned": false,
+      "visible": true,
+      "image": "",
+      "body": "An unserem Piratenhafen wurde fleißig gearbeitet!\n\nHANDEL & WIRTSCHAFT\nUnser NPC-Handel mit EasyNPC und MiguelEconomy wurde erweitert. Kaufen und Verkaufen, auch in Stapeln, wurde erfolgreich getestet. Für die Lobby haben wir besondere Händler und Angebote ausgearbeitet – vom Proviant für die Seeleute bis zu Holz, Plushables und seltenen Waystones.\n\nKOCHEN & VERSORGUNG\nDie Portierung von Lunchtime Cookbook auf Fabric 1.21.1 läuft erfolgreich: Kochbuch-Oberfläche, Kochbuchständer und die Einbindung von Rezepten sind getestet. Damit wird die Versorgung unserer Mannschaft immer abwechslungsreicher.\n\nUNSERE HAUSTIERE\nBei La Familia Pets funktionieren bereits wichtige Grundlagen einschließlich Haustiermenü und Katzenmodellen. Am Verhalten beim Folgen, Teleportieren und an weiteren Verbesserungen arbeiten wir weiter.\n\nPIRATENLOBBY & QUESTS\nDie erste Reise durch unsere Lobby wird um NPC-Begegnungen, Versorgung, Handel und die späteren Portal- und Kapitänsstationen aufgebaut. Weitere Quests und die endgültige Verknüpfung aller Aufgaben sind noch in Arbeit.\n\nDanke an alle Seeleute, die Fehler melden und beim Testen helfen!"
+    },
+    {
+      "id": "werftbericht-weltkarte-portale-erfolge-2026-11-17",
+      "date": "2026-11-17",
+      "title": "Werftbericht – Was als Nächstes ansteht",
+      "pinned": false,
+      "visible": true,
+      "image": "",
+      "body": "Es geht weiter auf hoher See! Diese Funktionen werden gerade fertiggestellt:\n\nWELTKARTE\nDie Kartenansicht im Launcher ist eingebaut. Die echte 2D-/3D-Karte wird sichtbar, sobald BlueMap auf dem Server läuft und über HTTPS erreichbar ist. Die Verbindung ist derzeit noch nicht fertig eingerichtet.\n\nSPIELERERFOLGE\nDie neue ServerMetrics-Mod 1.2.0 und die Launcher-Ansicht für echte Minecraft-Fortschritte sind gebaut. Nach dem Server-Update können Spieler sie mit ihrem persönlichen /lfstats-link-Schlüssel abrufen. Die FTB-Quest-Erfolge benötigen anschließend eine eigene Anbindung.\n\nNETHER & END\nUnsere Portal-Freischaltungen und Spendenmechanik werden weiter getestet. Die Portale selbst müssen beim Freischalten noch zuverlässig entstehen.\n\nQUESTBUCH & ABENTEUER\nWir erweitern die Piraten-Startquests, führen Spieler durch die Lobby und arbeiten an einem großen verknüpften FTB-Quests-System.\n\nSobald etwas zuverlässig läuft, erfahrt ihr es hier im Logbuch. Bis dahin: Haltet die Segel bereit!"
     }
   ]
 }
