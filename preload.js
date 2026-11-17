@@ -33,6 +33,7 @@ contextBridge.exposeInMainWorld('laFamilia', {
   connectPlayerStats: config => ipcRenderer.invoke('player-stats:connect',config),
   disconnectPlayerStats: () => ipcRenderer.invoke('player-stats:disconnect'),
   getPlayerStats: uuid => ipcRenderer.invoke('player-stats:get',uuid),
+  getPlayerAchievements: uuid => ipcRenderer.invoke('player-achievements:get',uuid),
   getGameStartStatus: () => ipcRenderer.invoke('game:get-start-state'),
   onGameStartStatusChange: callback => {
     if(typeof callback!=='function')return ()=>{};
