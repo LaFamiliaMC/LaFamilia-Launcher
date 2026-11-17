@@ -48,9 +48,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         <p>Derzeit noch keine Verbindung zu Spielerstatistiken. Wir zeigen keine erfundenen Werte an.</p>
       </div>
       <div id="lf-profile-achievements" class="lf-profile-additional" hidden>
-        <h4>Deine Erfolge</h4>
-        <p>Hier erscheinen später echte Minecraft-Erfolge und abgeschlossene Piratenquests vom Server.</p>
-        <p>Die Anbindung benötigt später unseren Server-Datendienst.</p>
+        <!-- Echte Erfolge werden von player-achievements-ui.js dynamisch angezeigt. -->
       </div>
     </section>
   `;
