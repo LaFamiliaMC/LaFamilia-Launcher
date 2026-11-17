@@ -91,7 +91,7 @@ function requestStats(url,token,uuid,{timeoutMs=5000}={}){
     req.once('error',error=>settle(Error('Statistik-Verbindung fehlgeschlagen: '+error.message)));
   });
 }
-function createPlayerStatsController({file,fetchStats=requestStats}){
+function createPlayerStatsController({file,fetchStats=requestStats,fetchAchievements}={}){
   if(typeof file!=='string'||!file)throw Error('Profil-Speicherort fehlt.');
   async function read(){
     try{
@@ -149,7 +149,23 @@ function createPlayerStatsController({file,fetchStats=requestStats}){
       return {ok:false,code:'failed',message:String(error.message||error).slice(0,220)};
     }
   }
-  return {info,connect,disconnect,getStats};
+  async function getAchievements(uuid){
+    const id=normalizePlayerUuid(uuid);
+    if(!id)return {ok:false,code:'no_profile',message:'Bitte zuerst dein Minecraft-Spielerprofil laden.'};
+    try{
+      const config=await read();
+      if(!config.token||!config.url)return {ok:false,code:'unlinked',
+        message:'Bitte im Spiel /lfstats link ausführen und den Schlüssel unter Profil → Statistiken hinterlegen.'};
+      if(config.uuid!==id)return {ok:false,code:'different_player',
+        message:'Dieser Schlüssel gehört zu einem anderen Minecraft-Profil.'};
+      const fetcher=fetchAchievements||require('./player-achievements').requestAchievements;
+      const achievements=await fetcher(config.url,config.token,id);
+      return {ok:true,code:'ready',achievements};
+    }catch(error){
+      return {ok:false,code:'failed',message:String(error.message||error).slice(0,220)};
+    }
+  }
+  return {info,connect,disconnect,getStats,getAchievements};
 }
 module.exports={normalizePlayerUuid,validatePlayerStatsUrl,playerStatsEndpoint,
   validateStatsResponse,requestStats,createPlayerStatsController};
