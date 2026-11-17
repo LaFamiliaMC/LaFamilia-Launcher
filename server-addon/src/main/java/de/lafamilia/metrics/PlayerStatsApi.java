@@ -205,7 +205,7 @@ public final class PlayerStatsApi {
                     catch (Exception error) { results.completeExceptionally(error); }
                 });
                 try { send(exchange, 200, results.get(3, TimeUnit.SECONDS).toString()); }
-                catch (Exception error) { send(exchange, 503, "{\\"error\\":\\"advancements_unavailable\\"}"); }
+                catch (Exception error) { send(exchange, 503, "{\"error\":\"advancements_unavailable\"}"); }
                 return;
             }
             CompletableFuture<Snapshot> live = new CompletableFuture<>();
