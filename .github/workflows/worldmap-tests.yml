@@ -1,0 +1,25 @@
+name: La Familia Weltkarte Tests
+
+on:
+  push:
+    branches:
+      - feature/worldmap-bluemap
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-worldmap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Check JavaScript syntax
+        run: npm run check
+      - name: Test launcher and new map integration
+        run: npm test
