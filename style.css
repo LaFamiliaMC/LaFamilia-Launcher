@@ -214,9 +214,11 @@ html, body { background-color: #000; }
 #card-news    { left: 33.65%; top: 59.10%; width: 19.15%; height: 29.25%; }
 #card-updates { left: 53.28%; top: 59.10%; width: 16.95%; height: 29.25%; }
 .card-header { display: none; } /* Überschriften sind auf template-bg.png */
+/* Drei Startseiten-Karten: Dynamische Texte erst unter der Holz-Titelleiste beginnen lassen.
+   Die Karten-Rahmen in assets/template-bg.png sowie ihre Fußbuttons bleiben unverändert. */
 #mod-card-content, #news-container, #updates-card-content {
   position: absolute;
-  left: 5.5%; top: 14.3%; width: 89%; height: 70.5%;
+  left: 5.5%; top: 21.5%; width: 89%; height: 62.5%;
   overflow: hidden;
   padding: 2px;
 }
@@ -229,7 +231,8 @@ html, body { background-color: #000; }
 #installed-mod-count { color: #a7f762; font-variant-numeric: tabular-nums; }
 .hint-text { opacity: .81; font-size: 10.5px; }
 #mod-list, #friends-list { margin: 5px 0 0; padding: 0; list-style: none; }
-#mod-list { max-height: 105px; overflow-y: auto; overflow-x: hidden; }
+/* Durch die tiefere Textposition bleibt die Modliste scrollbar oberhalb des Fußbuttons. */
+#mod-list { max-height: 84px; overflow-y: auto; overflow-x: hidden; }
 #mod-list li { padding: 2px 0; border: 0; background: transparent; overflow-wrap: anywhere; }
 #mod-list li::before { content: '✓'; color: #83ed36; margin-right: 7px; }
 #news-container { overflow-y: auto; }
