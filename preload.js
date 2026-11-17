@@ -51,6 +51,8 @@ contextBridge.exposeInMainWorld('laFamilia', {
   },
   getMetricsUrl: () => ipcRenderer.invoke('server:get-metrics-url'),
   saveMetricsUrl: url => ipcRenderer.invoke('server:save-metrics-url',url),
+  checkWorldMap: () => ipcRenderer.invoke('worldmap:check'),
+  openWorldMap: () => ipcRenderer.invoke('worldmap:open'),
   getServerStatus: () => ipcRenderer.invoke('server:get-status'),
   refreshServerStatus: () => ipcRenderer.invoke('server:refresh'),
   getServerAddress: () => ipcRenderer.invoke('server:get-address'),
