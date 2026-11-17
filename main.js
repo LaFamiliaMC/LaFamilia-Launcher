@@ -505,6 +505,9 @@ if(firstInstance)app.whenReady().then(() => {
   ipcMain.handle('player-stats:get',async (event,uuid)=>{
     getTrustedWindow(event);return playerStatsController.getStats(uuid);
   });
+  ipcMain.handle('player-achievements:get',async (event,uuid)=>{
+    getTrustedWindow(event);return playerStatsController.getAchievements(uuid);
+  });
   ipcMain.handle('game:get-start-state',event=>{getTrustedWindow(event);return gameStartController.getState();});
   ipcMain.handle('game:launch-official',async event=>{getTrustedWindow(event);return gameStartController.start();});
   ipcMain.handle('game:open-folder', async (event) => {
