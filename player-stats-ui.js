@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     <p class="lf-stats-footnote">Echte Vanilla-Werte. Platzierte Blöcke, Piratenrang und FTB-Quests
       benötigen noch eine eigene Servererfassung. Datenzugang nur mit deinem Spielerschlüssel.</p>
   `;
+  const DEFAULT_STATS_URL='https://23.88.65.87/status';
   const byId=id=>document.getElementById(id);
   const number=n=>Number.isSafeInteger(n)?n.toLocaleString('de-DE'):'—';
   const formatTime=ticks=>{
@@ -89,7 +90,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(!api?.getPlayerStatsConfig)return;
     try{
       const s=await api.getPlayerStatsConfig();
-      byId('lf-stats-url').value=s.url||'';
+      byId('lf-stats-url').value=s.url||DEFAULT_STATS_URL;
       byId('lf-stats-link-status').textContent=s.hasToken?'Spielerschlüssel hinterlegt.':'Noch nicht verknüpft.';
     }catch(error){byId('lf-stats-link-status').textContent=error.message;}
   }
@@ -100,7 +101,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     button.disabled=true;
     try{
       const result=await api.connectPlayerStats({
-        uuid:currentUuid,url:byId('lf-stats-url').value,token:byId('lf-stats-token').value
+        uuid:currentUuid,url:byId('lf-stats-url').value.trim()||DEFAULT_STATS_URL,token:byId('lf-stats-token').value
       });
       byId('lf-stats-token').value='';
       byId('lf-stats-url').value=result.url;
