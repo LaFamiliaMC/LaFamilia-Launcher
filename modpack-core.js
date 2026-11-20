@@ -111,7 +111,7 @@ function normalizeManifest(input){
   let total=mods.reduce((n,x)=>n+x.size,0);
   for(const category of ['resourcepacks','config']){
     const source=input[category];
-    if(!source||!Array.isArray(source.files)||source.files.length>20000)throw Error('Ungültiger Bereich: '+category);
+    if(!source||!Array.isArray(source.files)||source.files.length>40000)throw Error('Ungültiger Bereich: '+category);
     const files=source.files.map(x=>validFile(x,category,seen));
     const archive=validArchive(source.archive,category);
     if(files.length&&!archive)throw Error('Dateien vorhanden, aber ZIP fehlt: '+category);
