@@ -23,37 +23,23 @@ function demo({pack={phase:'up-to-date',updates:0,conflicts:[]},
   });
   return {ctrl,calls,states};
 }
-test('Keine Mod-Updates: Fabric, Profil und offizieller Launcher starten',async()=>{
+test('Spielen prüft keine GitHub-Updates und öffnet den offiziellen Launcher',async()=>{
   const f=demo(),result=await f.ctrl.start();
   assert.equal(result.ok,true);
-  assert.deepEqual(f.calls,['check','mods','fabric','settings','profile:8','launch']);
+  assert.deepEqual(f.calls,['mods','fabric','settings','profile:8','launch']);
   assert.equal(f.ctrl.getState().progress,100);
+  assert.equal(f.states.some(s=>s.phase==='checking-modpack'),false);
 });
-test('Fehlende Mods werden zuerst automatisch installiert und nachkontrolliert',async()=>{
+test('Auch bei verfügbaren Updates wird beim Spielen nichts heruntergeladen',async()=>{
   const f=demo({pack:{phase:'available',updates:2,conflicts:[]}});
   assert.equal((await f.ctrl.start()).ok,true);
-  assert.deepEqual(f.calls,['check','is-running','install','check','mods','fabric','settings','profile:8','launch']);
-  assert.ok(f.states.some(s=>s.phase==='updating-modpack'));
-});
-test('Fehlgeschlagener Mod-Download verhindert Minecraft-Start',async()=>{
-  const f=demo({pack:{phase:'available',updates:1,conflicts:[]},installed:{phase:'error',message:'Hash falsch'}});
-  assert.equal((await f.ctrl.start()).code,'modpack_error');
-  assert.equal(f.calls.includes('launch'),false);
-});
-test('Restliche Mod-Änderungen nach Installation verhindern Start',async()=>{
-  const f=demo({pack:{phase:'available',updates:1,conflicts:[]},verified:{phase:'available',updates:1,conflicts:[]}});
-  assert.equal((await f.ctrl.start()).code,'modpack_unverified');
-  assert.equal(f.calls.includes('fabric'),false);
-});
-test('Persönliche Dateien werden geschützt und nicht automatisch ersetzt',async()=>{
-  const f=demo({pack:{phase:'conflicts',updates:2,conflicts:[{path:'mods/custom.jar'}]}});
-  assert.equal((await f.ctrl.start()).code,'modpack_conflicts');
-  assert.deepEqual(f.calls,['check']);
-});
-test('Keine Updates bei offenem Minecraft Launcher',async()=>{
-  const f=demo({pack:{phase:'available',updates:1,conflicts:[]},running:true});
-  assert.equal((await f.ctrl.start()).code,'launcher_running');
+  assert.equal(f.calls.includes('check'),false);
   assert.equal(f.calls.includes('install'),false);
+});
+test('Spielstart funktioniert ohne GitHub-Verbindung',async()=>{
+  const f=demo({pack:{phase:'error',message:'Offline'}});
+  assert.equal((await f.ctrl.start()).ok,true);
+  assert.equal(f.calls.includes('check'),false);
 });
 test('Mods oder Fabric oder Profil fehlen: nie starten',async()=>{
   for(const [opts,code] of [[{mods:[]},'mods_empty'],[{fabric:{ok:false,code:'install_failed',message:'Fehler'}},'install_failed'],[{profile:{ok:false,code:'profile_error',message:'Fehler'}},'profile_error']]){
