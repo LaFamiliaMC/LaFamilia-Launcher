@@ -9,24 +9,9 @@ function createGameStartController({modpackManager,readInstalledMods,installFabr
   function stop(code,message){status('error',message,0,false);return {ok:false,code,message};}
   async function perform(){
     try{
-      status('checking-modpack','Prüfe Modpack über GitHub …',5);
-      const pack=await modpackManager.check();
-      if(pack.phase==='error')return stop('modpack_error',pack.message||'Modpack-Prüfung fehlgeschlagen.');
-      if(!['available','ready','up-to-date','conflicts'].includes(pack.phase))return stop('modpack_busy','Modverwaltung arbeitet noch. Bitte erneut versuchen.');
-      if(pack.conflicts?.length)return stop('modpack_conflicts','Eigene oder veränderte Modpack-Dateien erkannt. Bitte im Mods-Bereich prüfen.');
-      if(pack.phase==='available'||pack.updates>0||pack.removals>0){
-        if(await isLauncherRunning())return stop('launcher_running','Bitte den offiziellen Minecraft Launcher vor dem Mod-Update schließen.');
-        status('updating-modpack','Fehlende Mods, Resourcepacks und Configs werden installiert …',12);
-        const done=await modpackManager.install();
-        if(done.phase==='error')return stop('modpack_error',done.message||'Modpack-Installation fehlgeschlagen.');
-        if(done.conflicts?.length)return stop('modpack_conflicts','Geschützte Dateien entdeckt. Bitte im Mods-Bereich prüfen.');
-        if(done.phase!=='ready'||done.updates>0)return stop('modpack_unverified','Modpack-Installation nicht bestätigt.');
-        status('verifying-modpack','Prüfe Modpack nach dem Download erneut …',83);
-        const checked=await modpackManager.check();
-        if(checked.phase!=='up-to-date'||checked.updates>0||checked.conflicts?.length)
-          return stop('modpack_unverified','Dateiprüfung nach der Installation fehlgeschlagen. Bitte Mods prüfen.');
-      }
-      status('checking-mods','Kontrolliere lokale Mods …',86);
+      // Kein GitHub-Modcheck beim Spielen: Updates und Installation bleiben im Mods-Bereich.
+      // Lokale Mods und Fabric werden weiterhin vor dem Öffnen geprüft.
+      status('checking-mods','Kontrolliere lokale Mods …',15);
       const local=await readInstalledMods();
       if(!Array.isArray(local?.mods)||local.mods.length===0)
         return stop('mods_empty','Keine Mods gefunden. Bitte Mods-Bereich prüfen.');
