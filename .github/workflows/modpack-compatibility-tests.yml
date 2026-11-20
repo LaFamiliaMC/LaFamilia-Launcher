@@ -1,0 +1,31 @@
+name: La Familia Modpack Compatibility Tests
+
+on:
+  pull_request:
+    paths:
+      - 'modpack-*.js'
+      - 'tests/modpack.test.cjs'
+      - '.github/workflows/modpack-compatibility-tests.yml'
+  push:
+    paths:
+      - 'modpack-*.js'
+      - 'tests/modpack.test.cjs'
+      - '.github/workflows/modpack-compatibility-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  modpack-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: JavaScript syntax checks
+        run: npm run check
+      - name: Automated launcher tests
+        run: npm test
