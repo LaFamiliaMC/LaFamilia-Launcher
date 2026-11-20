@@ -59,6 +59,22 @@ test('Manifest V2 normalisieren, alle Bereiche und Hashes prüfen',()=>{
   assert.throws(()=>normalizeManifest(manifest({mods:[entry('mods','fabric-api.jar',data),entry('mods','FABRIC-API.jar',data)]})),/Doppelter/);
   assert.throws(()=>normalizeManifest({...manifest(),modLoader:'forge'}),/nicht kompatibel/);
 });
+test('27.158 Config-Einträge werden akzeptiert, über 40.000 abgelehnt',()=>{
+  const configs=Array.from({length:27158},(_,i)=>entry('config','generated/item-'+String(i).padStart(5,'0')+'.toml',configData));
+  const archive={file:'config.zip',size:128,sha256:HASH('archive'),url:BASE+'config.zip'};
+  const normalized=normalizeManifest(manifest({config:configs,confArchive:archive}));
+  assert.equal(normalized.config.files.length,27158);
+  assert.equal(normalized.all.length,27158);
+  const excessive=Array.from({length:40001},(_,i)=>entry('config','generated/too-many-'+i+'.toml',configData));
+  assert.throws(()=>normalizeManifest(manifest({config:excessive,confArchive:archive})),/Ungültiger Bereich: config/);
+});
+test('ZIP mit config/-Oberordner wird korrekt und verifiziert entpackt',async t=>{
+  const dir=await tempDir();t.after(()=>fs.rm(dir,{recursive:true,force:true}));
+  const archive=path.join(dir,'config.zip'),out=path.join(dir,'stage');
+  await fs.writeFile(archive,zipFile('config/settings.toml',configData));
+  await extractVerifiedZip(archive,'config',[entry('config','settings.toml',configData)],out);
+  assert.equal(await fs.readFile(path.join(out,'settings.toml'),'utf8'),'config example');
+});
 test('Fremde oder veränderte Configs werden nicht überschrieben',async t=>{
   const root=await tempDir();t.after(()=>fs.rm(root,{recursive:true,force:true}));
   await fs.mkdir(path.join(root,'config'),{recursive:true});
