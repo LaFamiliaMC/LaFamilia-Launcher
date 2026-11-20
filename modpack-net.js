@@ -78,9 +78,9 @@ async function getLatestManifest({signal}={}){
   catch(error){throw Error('Modpack-Release nicht erreichbar: '+error.message);}
   if(release.draft||release.prerelease||!/^modpack-v[0-9]+\.[0-9]+\.[0-9]+$/.test(release.tag_name))throw Error('Kein gültiges öffentliches LaFamilia-Modpack-Release.');
   const asset=Array.isArray(release.assets)?release.assets.find(x=>x.name==='manifest.json'&&x.state==='uploaded'):null;
-  if(!asset||!asset.browser_download_url||asset.size>4*1024*1024)throw Error('Das Release hat kein gültiges manifest.json.');
+  if(!asset||!asset.browser_download_url||asset.size>16*1024*1024)throw Error('Das Release hat kein gültiges manifest.json.');
   trustedAssetURL(asset.browser_download_url);
-  const buffer=await getBuffer(asset.browser_download_url,{maxBytes:4*1024*1024,signal});
+  const buffer=await getBuffer(asset.browser_download_url,{maxBytes:16*1024*1024,signal});
   if(buffer.length!==asset.size)throw Error('Unvollständige Manifest-Datei.');
   if(typeof asset.digest==='string'&&/^sha256:[a-f0-9]{64}$/i.test(asset.digest)&&sha(buffer)!==asset.digest.slice(7).toLowerCase())throw Error('Manifest SHA-256 stimmt nicht.');
   let manifest;
