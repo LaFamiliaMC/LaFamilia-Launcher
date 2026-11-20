@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
   playButton?.addEventListener('click',async()=>{
     if(playButton.disabled)return;
     if(!api?.launchMinecraftOfficial){notify('Spielstart nur in Windows-EXE verfügbar.');return;}
-    renderPlay(2,'Start','Prüfe Modpack und Minecraft-Installation …',true);
+    renderPlay(2,'Start','Prüfe lokale Mods und Minecraft-Installation …',true);
     try{
       const result=await api.launchMinecraftOfficial();
       const message=result?.message||'Minecraft Launcher konnte nicht gestartet werden.';
