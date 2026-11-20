@@ -24,7 +24,7 @@ function extractVerifiedZip(zipPath,category,manifestFiles,outputDir,{onFile}={}
     yauzl.open(zipPath,{lazyEntries:true,autoClose:true,validateEntrySizes:true,strictFileNames:true},(error,opened)=>{
       if(error){fail(error);return;}
       zip=opened;
-      if(zip.entryCount>manifestFiles.length+2000){fail(Error('Zu viele ZIP-Einträge.'));return;}
+      if(zip.entryCount>manifestFiles.length*2+1000){fail(Error('Zu viele ZIP-Einträge.'));return;}
       zip.on('error',fail);
       zip.on('end',()=>{
         if(done)return;
@@ -36,7 +36,11 @@ function extractVerifiedZip(zipPath,category,manifestFiles,outputDir,{onFile}={}
         (async()=>{
           if(raw.includes('\\')||raw.startsWith('/')||raw.includes('\u0000'))throw Error('Unsicherer Dateiname im ZIP.');
           const isDir=raw.endsWith('/');
-          const name=isDir?raw.slice(0,-1):raw;
+          // Accept archives with either files at ZIP root or a category folder
+          // (config/settings.toml). The manifest always stores category-relative paths.
+          const normalized=raw.startsWith(category+'/')?raw.slice(category.length+1):raw;
+          if(isDir&&normalized===''){zip.readEntry();return;}
+          const name=isDir?normalized.slice(0,-1):normalized;
           safeRelative(category+'/'+name,category);
           const mode=(entry.externalFileAttributes>>>16)&0xffff;
           if((mode&0o170000)===0o120000)throw Error('ZIP-Symlink blockiert.');
